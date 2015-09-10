@@ -681,10 +681,8 @@ list_args_or_locals (enum what_to_list what, enum print_values values,
 void
 mi_cmd_stack_select_frame (const char *command, char **argv, int argc)
 {
-  if (argc == 0 || argc > 1)
+  if (!select_frame_from_spec (argv, argc, 0))
     error (_("-stack-select-frame: Usage: FRAME_SPEC"));
-
-  select_frame_command (argv[0], 1 /* not used */ );
 }
 
 void

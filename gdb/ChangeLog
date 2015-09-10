@@ -1,3 +1,39 @@
+2018-07-17  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	(NEWS): Mention changes to frame related commands.
+	* cli/cli-decode.c (add_cmd_suppress_notification): New function.
+	(add_prefix_cmd_suppress_notification): New function.
+	(add_com_suppress_notification): Call
+	add_cmd_suppress_notification.
+	* command.h (add_cmd_suppress_notification): Declare.
+	(add_prefix_cmd_suppress_notification): Declare.
+	* mi/mi-cmd-stack.c (mi_cmd_stack_select_frame): Use new function
+	select_frame_from_spec.
+	* stack.c (find_frame_for_function): Add declaration.
+	(find_frame_for_address): New function.
+	(parse_frame_specification): Delete function.
+	(frame_selection_by_function_completer): New function.
+	(info_frame_command): Rename to...
+	(info_frame_command_core): ...this, and update parameter types.
+	(select_frame_command): Rename to...
+	(select_frame_command_core): ...this, and update parameter types.
+	(frame_command): Rename to...
+	(frame_command_core): ...this, and update parameter types.
+	(class frame_command_helper): New class to wrap implementations of
+	frame related sub-commands.
+	(select_frame_from_spec): New function.
+	(frame_apply_cmd_list): New static global.
+	(frame_cmd_list): Make static.
+	(select_frame_cmd_list): New global for sub-commands.
+	(info_frame_cmd_list): New global for sub-commands.
+	(_initialize_stack): Register sub-commands for 'frame',
+	'select-frame', and 'info frame'.  Update 'frame apply' commands
+	to use frame_apply_cmd_list.  Move function local static
+	frame_apply_list to file static frame_apply_cmd_list for
+	consistency.
+	* stack.h (select_frame_command): Delete declarationn.
+	(select_frame_from_spec): Declare new function.
+
 2018-08-08  Simon Marchi  <simon.marchi@ericsson.com>
 
 	* target.c (str_comma_list_concat_elem): Fix typo in comment.
