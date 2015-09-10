@@ -1,3 +1,10 @@
+2018-07-17  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* gdb.base/frame-selection.exp: New file.
+	* gdb.base/frame-selection.c: New file.
+	* gdb.mi/mi-frame-selection.exp: New file.
+	* gdb.mi/mi-frame-selection.c: New file.
+
 2018-08-08  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	PR gdb/18050:
