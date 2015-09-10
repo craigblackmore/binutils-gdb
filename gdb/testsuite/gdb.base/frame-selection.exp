@@ -1,0 +1,156 @@
+# Copyright 2018 Free Software Foundation, Inc.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+standard_testfile
+
+if {[prepare_for_testing "failed to prepare" $testfile $srcfile {debug}]} {
+    return -1
+}
+
+runto_main
+gdb_breakpoint frame_2
+gdb_continue_to_breakpoint frame_2
+
+gdb_test "bt" "#0  frame_2.*#1  $hex in frame_1.*#2  $hex in main.*" "backtrace at breakpoint"
+
+# Perform "info frame" to extract the frames address.
+proc get_frame_address { {testname ""} } {
+    global hex gdb_prompt
+
+    set testname "get_frame_address: ${testname}"
+    set frame_address "unknown"
+
+    send_gdb "info frame\n"
+    gdb_expect {
+	-re ", frame at ($hex):\r\n.*\r\n$gdb_prompt $" {
+	    set frame_address $expect_out(1,string)
+	    pass $testname
+	}
+	-re ".*$gdb_prompt $" { fail $testname }
+	timeout { fail "$testname (timeout)" }
+    }
+
+    return $frame_address
+}
+
+# Passes a list of addresses.  Return a new address that is not in the
+# list.
+proc get_new_address { {addresses {}} } {
+    return [format "%#x" [expr [lindex $addresses [llength addresses]] + 0x10 ]]
+}
+
+proc check_frame { level address function } {
+    global hex gdb_prompt
+
+    set testname "check frame level ${level}"
+    send_gdb "info frame\n"
+    gdb_expect {
+	-re "Stack level ${level}, frame at ($address):\r\n rip = $hex in ${function} \(\[^\r\n\]*\); saved rip = $hex\r\n.*\r\n$gdb_prompt $" {
+	    pass $testname
+	}
+	-re ".*$gdb_prompt $" { fail $testname }
+	timeout { fail "$testname (timeout)" }
+    }
+}
+
+# Select frame using level, but relying on this being the default
+# action, so "frame 0" performs "frame level 0".
+gdb_test "frame 0" "#0  frame_2.*"
+set frame_0_address [ get_frame_address "frame 0" ]
+gdb_test "frame 1" "#1  $hex in frame_1.*"
+set frame_1_address [ get_frame_address "frame 1" ]
+gdb_test "frame 2" "#2  $hex in main.*"
+set frame_2_address [ get_frame_address "frame 2" ]
+gdb_test "frame 3" "No frame at level 3\."
+
+# Find an address that matches no frame
+set no_frame_address [ get_new_address [list $frame_0_address \
+					     $frame_1_address \
+					     $frame_2_address] ]
+
+# Select frame using 'level' specification.
+gdb_test "frame level 0" "#0  frame_2.*"
+gdb_test "frame level 1" "#1  $hex in frame_1.*"
+gdb_test "frame level 2" "#2  $hex in main.*"
+gdb_test "frame level 3" "No frame at level 3\."
+
+# Select frame by address.
+gdb_test "frame address ${frame_0_address}" "#0  frame_2.*"
+gdb_test "frame address ${frame_1_address}" "#1  $hex in frame_1.*"
+gdb_test "frame address ${frame_2_address}" "#2  $hex in main.*"
+gdb_test "frame address ${no_frame_address}" \
+    "No frame at address ${no_frame_address}\."
+
+# Select frame by function.
+gdb_test "frame function frame_2" "#0  frame_2.*"
+gdb_test "frame function frame_1" "#1  $hex in frame_1.*"
+gdb_test "frame function main" "#2  $hex in main.*"
+# Check for a distinction between a known function not in the stack
+# trace, and an unknown function.
+gdb_test "frame function recursive" "No frame for function \"recursive\"."
+gdb_test "frame function foo" "Function \"foo\" not defined."
+
+
+gdb_test_no_output "select-frame 0"
+check_frame "0" "${frame_0_address}" "frame_2"
+gdb_test_no_output "select-frame 1"
+check_frame "1" "${frame_1_address}" "frame_1"
+gdb_test_no_output "select-frame 2"
+check_frame "2" "${frame_2_address}" "main"
+gdb_test "select-frame 3" "No frame at level 3\."
+
+gdb_test_no_output "select-frame level 0"
+check_frame "0" "${frame_0_address}" "frame_2"
+gdb_test_no_output "select-frame level 1"
+check_frame "1" "${frame_1_address}" "frame_1"
+gdb_test_no_output "select-frame level 2"
+check_frame "2" "${frame_2_address}" "main"
+gdb_test "select-frame level 3" "No frame at level 3\."
+
+gdb_test_no_output "select-frame address ${frame_0_address}"
+check_frame "0" "${frame_0_address}" "frame_2"
+gdb_test_no_output "select-frame address ${frame_1_address}"
+check_frame "1" "${frame_1_address}" "frame_1"
+gdb_test_no_output "select-frame address ${frame_2_address}"
+check_frame "2" "${frame_2_address}" "main"
+gdb_test "select-frame address ${no_frame_address}" \
+    "No frame at address ${no_frame_address}\."
+
+gdb_test_no_output "select-frame function frame_2"
+check_frame "0" "${frame_0_address}" "frame_2"
+gdb_test_no_output "select-frame function frame_1"
+check_frame "1" "${frame_1_address}" "frame_1"
+gdb_test_no_output "select-frame function main"
+check_frame "2" "${frame_2_address}" "main"
+# Check for a distinction between a known function not in the stack
+# trace, and an unknown function.
+gdb_test "select-frame function recursive" \
+    "No frame for function \"recursive\"."
+gdb_test "select-frame function foo" \
+    "Function \"foo\" not defined."
+
+# Now continue until we hit the breakpoint again.
+gdb_continue_to_breakpoint frame_2
+gdb_test "bt" \
+    "#0  frame_2.*#1  $hex in recursive.*#2  $hex in recursive.*#3  $hex in recursive.*#4  $hex in main.*" \
+    "backtrace at breakpoint with recursive frames"
+
+# Check "frame function" when a function name occurs multiple times in
+# the stack.  The inner most (lowest level) should always be selected.
+gdb_test "frame function frame_2" "#0  frame_2.*"
+gdb_test "frame function recursive" "#1  $hex in recursive.*"
+gdb_test "frame function recursive" "#1  $hex in recursive.*"
+gdb_test "frame function main" "#4  $hex in main.*"
+gdb_test "frame function recursive" "#1  $hex in recursive.*"

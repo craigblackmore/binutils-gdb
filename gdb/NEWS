@@ -74,6 +74,14 @@ thread apply [all | COUNT | -COUNT] [FLAG]... COMMAND
 * C expressions can now use _Alignof, and C++ expressions can now use
   alignof.
 
+* Changes to the "frame", "select-frame", and "info frame" CLI
+  commands, as well as the "-stack-select-frame" MI command.  These
+  commands all now take a frame specification which is either a frame
+  level, or one of the keywords 'level', 'address', 'function', or
+  'view' followed by a parameter.  Selecting a frame by address, or
+  viewing a frame outside the current backtrace now requires the use
+  of a keyword.  Selecting a frame by level is unchanged.
+
 * New commands
 
 set debug fbsd-nat
