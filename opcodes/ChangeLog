@@ -1,3 +1,7 @@
+2016-02-14  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* fr30-ibld.c: Regenerate from latest cpu/fr30.cpu file.
+
 2016-02-10  Claudiu Zissulescu  <claziss@synopsys.com>
 	    Janek van Oirschot  <jvanoirs@synopsys.com>
 

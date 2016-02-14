@@ -1,3 +1,8 @@
+2016-02-14  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* fr30.cpu (f-m4): Adjust extract handler to avoid shifting a
+	negative value (undefined behaviour in C).
+
 2016-02-02  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* epiphany.opc (epiphany_print_insn): Set info->bytes_per_line to
