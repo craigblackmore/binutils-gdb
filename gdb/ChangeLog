@@ -1,3 +1,7 @@
+2018-02-13  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* configure.tgt: Add libsim.a as a dependency for riscv.
+
 2018-08-15  Tom Tromey  <tom@tromey.com>
 
 	* aarch64-linux-tdep.c (aarch64_linux_core_read_vq): Use pulongest.
