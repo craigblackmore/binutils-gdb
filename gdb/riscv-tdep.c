@@ -61,6 +61,9 @@
 #include "opcode/riscv-opc.h"
 #include <algorithm>
 
+/* According to the ABI, the SP must be aligned to 16-byte boundaries.  */
+#define SP_ALIGNMENT 16
+
 #define DECLARE_INSN(INSN_NAME, INSN_MATCH, INSN_MASK) \
 static inline bool is_ ## INSN_NAME ## _insn (long insn) \
 { \
@@ -392,27 +395,35 @@ riscv_return_value (struct gdbarch  *gdbarch,
 		    gdb_byte *readbuf,
 		    const gdb_byte *writebuf)
 {
+  int riscv_debug = (getenv ("APB_DEBUG") != NULL);
   enum type_code rv_type = TYPE_CODE (type);
   unsigned int rv_size = TYPE_LENGTH (type);
   int fp, regnum;
   ULONGEST tmp;
 
+  if (riscv_debug)
+    fprintf (stderr, "Entering %s\n", __PRETTY_FUNCTION__);
+
   /* Paragraph on return values taken from RISC-V specification (post v2.0):
 
      Values are returned from functions in integer registers a0 and a1 and
-     floating-point registers fa0 and fa1.  Floating-point values are returned
-     in floating-point registers only if they are primitives or members of a
-     struct consisting of only one or two floating-point values.  Other return
-     values that fit into two pointer-words are returned in a0 and a1.  Larger
-     return values are passed entirely in memory; the caller allocates this
-     memory region and passes a pointer to it as an implicit first parameter
-     to the callee.  */
+     floating-point registers fa0 and fa1.  Floating-point values are
+     returned in floating-point registers only if they are primitives or
+     members of a struct consisting of only one or two floating-point
+     values.  Other return values that fit into two pointer-words are
+     returned in a0 and a1.  Larger return values are passed entirely in
+     memory; the caller allocates this memory region and passes a pointer
+     to it as an implicit first parameter to the callee.  */
 
   /* Deal with struct/unions first that are passed via memory.  */
   if (rv_size > 2 * riscv_isa_regsize (gdbarch))
     {
       if (readbuf || writebuf)
-	regcache_cooked_read_unsigned (regcache, RISCV_A0_REGNUM, &tmp);
+	{
+	  regcache_cooked_read_unsigned (regcache, RISCV_A0_REGNUM, &tmp);
+	  if (riscv_debug)
+	    fprintf (stderr, "Results are in memory at 0x%lx\n", tmp);
+	}
       if (readbuf)
 	read_memory (tmp, readbuf, rv_size);
       if (writebuf)
@@ -446,7 +457,8 @@ riscv_return_value (struct gdbarch  *gdbarch,
     }
 
   /* Handle return value in a register.  */
-  regnum = fp ? RISCV_FA0_REGNUM : RISCV_A0_REGNUM;
+  regnum = /* fp ? RISCV_FA0_REGNUM : */ RISCV_A0_REGNUM;
+  (void) fp;
 
   if (readbuf)
     riscv_extract_return_value (type, regcache, readbuf, regnum);
@@ -1068,6 +1080,47 @@ riscv_push_dummy_code (struct gdbarch *gdbarch, CORE_ADDR sp, CORE_ADDR funaddr,
   return sp - 16;
 }
 
+/* Compute the alignment of the type T.  */
+
+static int
+riscv_type_alignment (struct type *t)
+{
+  t = check_typedef (t);
+  switch (TYPE_CODE (t))
+    {
+    default:
+      error (_("Could not compute alignment of type"));
+
+    case TYPE_CODE_PTR:
+    case TYPE_CODE_ENUM:
+    case TYPE_CODE_INT:
+    case TYPE_CODE_FLT:
+    case TYPE_CODE_REF:
+    case TYPE_CODE_CHAR:
+    case TYPE_CODE_BOOL:
+      return TYPE_LENGTH (t);
+
+    case TYPE_CODE_ARRAY:
+    case TYPE_CODE_COMPLEX:
+      return riscv_type_alignment (TYPE_TARGET_TYPE (t));
+
+    case TYPE_CODE_STRUCT:
+    case TYPE_CODE_UNION:
+      {
+	int i;
+	int align = 1;
+
+	for (i = 0; i < TYPE_NFIELDS (t); ++i)
+	  {
+	    int a = riscv_type_alignment (TYPE_FIELD_TYPE (t, i));
+	    if (a > align)
+	      align = a;
+	  }
+	return align;
+      }
+    }
+}
+
 static CORE_ADDR
 riscv_push_dummy_call (struct gdbarch *gdbarch,
 		       struct value *function,
@@ -1079,50 +1132,411 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 		       int struct_return,
 		       CORE_ADDR struct_addr)
 {
+  int riscv_debug = (getenv ("APB_DEBUG") != NULL);
+  int i;
+  CORE_ADDR sp_args, sp_refs;
   enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
   struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
-  gdb_byte buf[4];
-  int i;
-  CORE_ADDR func_addr = find_function_addr (function, NULL);
+  struct argument_info
+  {
+    /* Contents of the argument.  */
+    const gdb_byte *contents;
 
-  /* Push excess arguments in reverse order.  */
+    /* Length of argument.  */
+    int length;
 
-  for (i = nargs; i >= 8; --i)
+    /* Alignment required, if on the stack.  */
+    int align;
+
+    /* Each argument can have either 1 or 2 locations assigned to it.  Each
+       location describes where part of the argument will be placed.  The
+       second location is valid based on the LOC_TYPE and C_LENGTH fields
+       of the first location (which is always valid).  */
+    struct argument_location
     {
-      struct type *value_type = value_enclosing_type (args[i]);
-      int container_len = align_up (TYPE_LENGTH (value_type), 3);
+      /* What type of location this is.  */
+      enum location_type
+	{
+	 /* Argument passed in a register.  */
+	 in_reg,
 
-      sp -= container_len;
-      write_memory (sp, value_contents_writeable (args[i]), container_len);
+	 /* Argument passed as an on stack argument.  */
+	 on_stack,
+
+	 /* Argument passed by reference.  The second location is always
+	    valid for a BY_REF argument, and describes where the address
+	    of the BY_REF argument should be placed.  */
+	 by_ref
+	} loc_type;
+
+      /* Information that depends on the location type.  */
+      union
+      {
+	/* Which register number to use.  */
+	int regno;
+
+	/* The offset into the stack region.  */
+	int offset;
+      } loc_data;
+
+      /* The length of contents covered by this location.  If this is less
+	 than the total length of the argument, then the second location
+	 will be valid, and will describe where the rest of the argument
+	 will go.  */
+      int c_length;
+    } argloc[2];
+  };
+
+  /* Arguments can be passed as on stack arguments, or by reference.  The
+     on stack arguments must be in a continuous region starting from $sp,
+     while the by reference arguments can be anywhere, but we'll put them
+     on the stack after (at higher address) the on stack arguments.
+
+     This might not be the right approach to take.  The ABI is clear that
+     an argument passed by reference can be modified by the callee, which
+     us placing the argument (temporarily) onto the stack will not achieve
+     (changes will be lost).  There's also the possibility that very large
+     arguments could overflow the stack.
+
+     This struct is used to track offset into these two areas for where
+     arguments are to be placed.  */
+  struct stack_offsets
+  {
+    /* Offset into on stack argument area.  */
+    int arg_offset;
+
+    /* Offset into the pass by reference area.  */
+    int ref_offset;
+  };
+
+  struct argument_info *arg_info =
+    (struct argument_info *) alloca (nargs * sizeof (struct argument_info));
+  struct argument_info *info;
+
+  /* TODO: Some targets will not support FLOAT registers.  */
+  int next_int_regnum = RISCV_A0_REGNUM;
+  int next_flt_regnum = RISCV_FA0_REGNUM;
+  int xlen = riscv_isa_regsize (gdbarch);
+  CORE_ADDR osp = sp;
+
+  /* We'll use register $a0 if we're returning a struct.  */
+  if (struct_return)
+    ++next_int_regnum;
+
+  struct stack_offsets current_offsets = {0, 0};
+  for (i = 0, info = &arg_info[0];
+       i < nargs;
+       ++i, ++info)
+    {
+      int next_onstack_size;
+      struct value *arg = args[i];
+      struct type *arg_type = check_typedef (value_type (arg));
+      int length = TYPE_LENGTH (arg_type);
+
+      switch (TYPE_CODE (arg_type))
+	{
+	case TYPE_CODE_INT:
+	case TYPE_CODE_BOOL:
+	case TYPE_CODE_CHAR:
+	case TYPE_CODE_RANGE:
+	case TYPE_CODE_ENUM:
+	  if (length <= xlen)
+	    {
+	      arg_type = builtin_type (gdbarch)->builtin_long;
+	      arg = value_cast (arg_type, arg);
+	      length = xlen;
+	    }
+	  else if (length <= (2 * xlen))
+	    {
+	      arg_type = builtin_type (gdbarch)->builtin_long_long;
+	      arg = value_cast (arg_type, arg);
+	      length = 2 * xlen;
+	    }
+	  /* Aligment is equal to the type length for the basic types.  */
+	  info->align = TYPE_LENGTH (arg_type);
+	  break;
+
+	case TYPE_CODE_FLT:
+	  /* Aligment is equal to the type length for the basic types.  */
+	  info->align = TYPE_LENGTH (arg_type);
+	  break;
+
+	case TYPE_CODE_STRUCT:
+	default:
+	  info->align = riscv_type_alignment (arg_type);
+	  break;
+	}
+
+      info->length = length;
+      info->contents = value_contents (arg);
+
+      if (length > (2 * xlen))
+	{
+	  /* Argument is going to be passed by reference.  */
+	  info->argloc[0].loc_type
+	    = argument_info::argument_location::by_ref;
+	  info->argloc[0].loc_data.offset
+	    = align_up (current_offsets.ref_offset, info->align);
+	  current_offsets.ref_offset += info->length;
+	  info->argloc[0].c_length = info->length;
+
+	  if (next_int_regnum > (RISCV_A0_REGNUM + 7))
+	    {
+	      /* Address is on the stack.  */
+	      info->argloc[1].loc_type
+		= argument_info::argument_location::on_stack;
+	      info->argloc[1].loc_data.offset
+		= align_up (current_offsets.arg_offset, xlen);
+	      current_offsets.arg_offset += xlen;
+	      info->argloc[0].c_length = xlen;
+	    }
+	  else
+	    {
+	      /* Address is in a register.  */
+	      info->argloc[1].loc_type
+		= argument_info::argument_location::in_reg;
+	      info->argloc[1].loc_data.regno = next_int_regnum;
+	      ++next_int_regnum;
+	    }
+	}
+      else if (next_int_regnum > (RISCV_A0_REGNUM + 7))
+	{
+	  /* Whole argument is on the stack.  */
+	  info->argloc[0].loc_type
+	    = argument_info::argument_location::on_stack;
+	  info->argloc[0].loc_data.offset
+	    = align_up (current_offsets.arg_offset, info->align);
+	  current_offsets.arg_offset += info->length;
+	  info->argloc[0].c_length = info->length;
+	}
+      else
+	{
+	  /* At least the first part of the argument is in a register.  */
+	  info->argloc[0].loc_type
+	    = argument_info::argument_location::in_reg;
+	  info->argloc[0].loc_data.regno = next_int_regnum;
+	  ++next_int_regnum;
+
+	  if (info->length <= xlen)
+	    info->argloc[0].c_length = info->length;
+	  else
+	    {
+	      gdb_assert (info->length <= (2 * xlen));
+	      info->argloc[0].c_length = xlen;
+
+	      info->argloc[1].c_length = (info->length - xlen);
+
+	      /* Second part of the argument might be in a register, or on
+		 the stack, if there are no more registers. */
+	      if (next_int_regnum > (RISCV_A0_REGNUM + 7))
+		{
+		  /* Second part on the stack.  */
+		  info->argloc[1].loc_type
+		    = argument_info::argument_location::on_stack;
+		  info->argloc[1].loc_data.offset
+		    = align_up (current_offsets.arg_offset, info->align);
+		  current_offsets.arg_offset += (info->length - xlen);
+		}
+	      else
+		{
+		  /* Second part in a register. */
+		  info->argloc[1].loc_type
+		    = argument_info::argument_location::in_reg;
+		  info->argloc[1].loc_data.regno = next_int_regnum;
+		  ++next_int_regnum;
+		}
+	    }
+	}
     }
 
-  /* Initialize argument registers.  */
+  /* Adjust the stack pointer and align it.  */
+  sp = sp_refs = align_down (sp - current_offsets.ref_offset, SP_ALIGNMENT);
+  sp = sp_args = align_down (sp - current_offsets.arg_offset, SP_ALIGNMENT);
 
-  for (i = 0; i < nargs && i < 8; ++i)
+  if (riscv_debug)
     {
-      struct type *value_type = value_enclosing_type (args[i]);
-      const gdb_byte *arg_bits = value_contents_all (args[i]);
-      int regnum = (TYPE_CODE (value_type) == TYPE_CODE_FLT
-		    ? RISCV_FA0_REGNUM : RISCV_A0_REGNUM);
+      fprintf (stderr, "dummy call args:\n");
+      if (struct_return)
+	fprintf (stderr, "[*] struct return pointer in register $A0\n");
+      for (i = 0; i < nargs; ++i)
+	{
+	  int has_second_location = 0;
+	  struct argument_info *info = &arg_info [i];
 
-      regcache_cooked_write_unsigned
-	(regcache, regnum + i,
-	 extract_unsigned_integer
-	   (arg_bits, riscv_isa_regsize(gdbarch), byte_order));
+	  fprintf (stderr, "[%d] length: 0x%x, alignment: 0x%x",
+		   i, info->length, info->align);
+	  switch (info->argloc[0].loc_type)
+	    {
+	    case argument_info::argument_location::in_reg:
+	      fprintf (stderr, ", register $A%d",
+		       (info->argloc[0].loc_data.regno - RISCV_A0_REGNUM));
+	      has_second_location = (info->argloc[0].c_length
+				     < info->length);
+	      break;
+
+	    case argument_info::argument_location::on_stack:
+	      fprintf (stderr, ", on stack at offset 0x%x",
+		       info->argloc[0].loc_data.offset);
+	      has_second_location = 0;
+	      break;
+
+	    case argument_info::argument_location::by_ref:
+	      fprintf (stderr, ", by reference, data at offset 0x%x",
+		       info->argloc[0].loc_data.offset);
+	      if (info->argloc[1].loc_type
+		  == argument_info::argument_location::in_reg)
+		fprintf (stderr, ", address in register $A%d",
+			 (info->argloc[1].loc_data.regno - RISCV_A0_REGNUM));
+	      else
+		{
+		  gdb_assert (info->argloc[1].loc_type
+			      == argument_info::argument_location::on_stack);
+		  fprintf (stderr, ", address on stack at offset 0x%x",
+			   info->argloc[1].loc_data.offset);
+		}
+	      has_second_location = 0;
+	      break;
+
+	    default:
+	      error ("unknown argument location type");
+	    }
+
+	  if (has_second_location)
+	    {
+	      switch (info->argloc[1].loc_type)
+		{
+		case argument_info::argument_location::in_reg:
+		  fprintf (stderr, ", register $A%d",
+			   (info->argloc[1].loc_data.regno - RISCV_A0_REGNUM));
+		  break;
+
+		case argument_info::argument_location::on_stack:
+		  fprintf (stderr, ", on stack at offset 0x%x",
+			   info->argloc[1].loc_data.offset);
+		  break;
+
+		case argument_info::argument_location::by_ref:
+		default:
+		  /* The second location should never be a reference, any
+		     argument being passed by reference just places its address
+		     in the first location and is done.  */
+		  error (_("invalid argument location"));
+		  break;
+		}
+	    }
+
+	  fprintf (stderr, "\n");
+	}
+      if (current_offsets.arg_offset > 0
+	  || current_offsets.ref_offset > 0)
+	{
+	  fprintf (stderr, "Stack required (for args): 0x%x\n",
+		   current_offsets.arg_offset);
+	  fprintf (stderr, "Stack required (for refs): 0x%x\n",
+		   current_offsets.ref_offset);
+	  fprintf (stderr, "          Stack allocated: 0x%lx\n",
+		   (osp - sp));
+	}
     }
 
-  /* Store struct value address.  */
+  /* Now load the argument into registers, or onto the stack.  */
 
   if (struct_return)
-    regcache_cooked_write_unsigned (regcache, RISCV_A0_REGNUM, struct_addr);
+    {
+      gdb_byte buf[sizeof (LONGEST)];
+
+      store_unsigned_integer (buf, xlen, byte_order, struct_addr);
+      regcache_cooked_write (regcache, RISCV_A0_REGNUM, buf);
+    }
+
+  for (i = 0; i < nargs; ++i)
+    {
+      CORE_ADDR dst;
+      int second_arg_length = 0;
+      const gdb_byte *second_arg_data;
+      struct argument_info *info = &arg_info [i];
+
+      gdb_assert (info->length > 0);
+
+      switch (info->argloc[0].loc_type)
+	{
+	case argument_info::argument_location::in_reg:
+	  {
+	    gdb_byte tmp [sizeof (ULONGEST)];
+
+	    gdb_assert (info->argloc[0].c_length <= info->length);
+	    memset (tmp, 0, sizeof (tmp));
+	    memcpy (tmp, info->contents, info->argloc[0].c_length);
+	    regcache_cooked_write (regcache,
+				   info->argloc[0].loc_data.regno,
+				   tmp);
+	    second_arg_length = info->length - info->argloc[0].c_length;
+	    second_arg_data = info->contents + info->argloc[0].c_length;
+	  }
+	  break;
+
+	case argument_info::argument_location::on_stack:
+	  dst = sp_args + info->argloc[0].loc_data.offset;
+	  write_memory (dst, info->contents, info->length);
+	  second_arg_length = 0;
+	  break;
+
+	case argument_info::argument_location::by_ref:
+	  dst = sp_refs + info->argloc[0].loc_data.offset;
+	  write_memory (dst, info->contents, info->length);
+
+	  second_arg_length = xlen;
+	  second_arg_data = (gdb_byte *) &dst;
+	  break;
+
+	default:
+	  error ("unknown argument location type");
+	}
+
+      if (second_arg_length > 0)
+	{
+	  switch (info->argloc[1].loc_type)
+	    {
+	    case argument_info::argument_location::in_reg:
+	      {
+		gdb_byte tmp [sizeof (ULONGEST)];
+
+		gdb_assert (second_arg_length <= xlen);
+		memset (tmp, 0, sizeof (tmp));
+		memcpy (tmp, second_arg_data, second_arg_length);
+		regcache_cooked_write (regcache,
+				       info->argloc[1].loc_data.regno,
+				       tmp);
+	      }
+	      break;
+
+	    case argument_info::argument_location::on_stack:
+	      dst = sp_args + info->argloc[1].loc_data.offset;
+	      write_memory (dst, second_arg_data, second_arg_length);
+	      break;
+
+	    case argument_info::argument_location::by_ref:
+	    default:
+	      /* The second location should never be a reference, any
+		 argument being passed by reference just places its address
+		 in the first location and is done.  */
+	      error (_("invalid argument location"));
+	      break;
+	    }
+	}
+    }
 
   /* Set the dummy return value to bp_addr.
      A dummy breakpoint will be setup to execute the call.  */
 
+  if (riscv_debug)
+    fprintf (stderr, "Writing $ra = 0x%lx\n", bp_addr);
   regcache_cooked_write_unsigned (regcache, RISCV_RA_REGNUM, bp_addr);
 
   /* Finally, update the stack pointer.  */
 
+  if (riscv_debug)
+    fprintf (stderr, "Writing $sp = 0x%lx\n", sp);
   regcache_cooked_write_unsigned (regcache, RISCV_SP_REGNUM, sp);
 
   return sp;
@@ -1275,9 +1689,11 @@ riscv_gdbarch_init (struct gdbarch_info info,
   set_gdbarch_short_bit (gdbarch, 16);
   set_gdbarch_int_bit (gdbarch, 32);
   set_gdbarch_long_bit (gdbarch, riscv_isa_regsize (gdbarch) * 8);
+  set_gdbarch_long_long_bit (gdbarch, 64);
   set_gdbarch_float_bit (gdbarch, 32);
   set_gdbarch_double_bit (gdbarch, 64);
   set_gdbarch_long_double_bit (gdbarch, 128);
+  set_gdbarch_long_double_format (gdbarch, floatformats_ia64_quad);
   set_gdbarch_ptr_bit (gdbarch, riscv_isa_regsize (gdbarch) * 8);
   set_gdbarch_char_signed (gdbarch, 1);
 
