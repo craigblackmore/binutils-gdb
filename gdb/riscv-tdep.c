@@ -1382,8 +1382,9 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	      break;
 
 	    case argument_info::argument_location::by_ref:
-	      fprintf (stderr, ", by reference, data at offset 0x%x",
-		       info->argloc[0].loc_data.offset);
+	      fprintf (stderr, ", by reference, data at offset 0x%x (0x%lx)",
+		       info->argloc[0].loc_data.offset,
+		       (sp_refs + info->argloc[0].loc_data.offset));
 	      if (info->argloc[1].loc_type
 		  == argument_info::argument_location::in_reg)
 		fprintf (stderr, ", address in register $A%d",
@@ -1392,8 +1393,9 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 		{
 		  gdb_assert (info->argloc[1].loc_type
 			      == argument_info::argument_location::on_stack);
-		  fprintf (stderr, ", address on stack at offset 0x%x",
-			   info->argloc[1].loc_data.offset);
+		  fprintf (stderr, ", address on stack at offset 0x%x (0x%lx)",
+			   info->argloc[1].loc_data.offset,
+			   (sp_args + info->argloc[1].loc_data.offset));
 		}
 	      has_second_location = 0;
 	      break;
@@ -1512,9 +1514,13 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	      break;
 
 	    case argument_info::argument_location::on_stack:
-	      dst = sp_args + info->argloc[1].loc_data.offset;
-	      write_memory (dst, second_arg_data, second_arg_length);
-	      break;
+	      {
+		CORE_ADDR arg_addr;
+
+		arg_addr = sp_args + info->argloc[1].loc_data.offset;
+		write_memory (arg_addr, second_arg_data, second_arg_length);
+		break;
+	      }
 
 	    case argument_info::argument_location::by_ref:
 	    default:
