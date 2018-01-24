@@ -1009,7 +1009,7 @@ reg_fetch (sim_cpu *cpu, int rn, unsigned char *buf, int len)
       memcpy (buf, &cpu->regs[rn], len);
       return len;
     case SIM_RISCV_FIRST_FP_REGNUM ... SIM_RISCV_LAST_FP_REGNUM:
-      memcpy (buf, &cpu->fpregs[rn], len);
+      memcpy (buf, &cpu->fpregs[rn - SIM_RISCV_FIRST_FP_REGNUM], len);
       return len;
     case SIM_RISCV_PC_REGNUM:
       memcpy (buf, &cpu->pc, len);
