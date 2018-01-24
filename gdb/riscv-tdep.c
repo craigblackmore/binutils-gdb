@@ -1262,6 +1262,7 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	  break;
 
 	case TYPE_CODE_STRUCT:
+	  length = align_up (length, xlen);
 	default:
 	  info->align = riscv_type_alignment (arg_type);
 	  break;
