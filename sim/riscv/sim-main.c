@@ -859,7 +859,7 @@ execute_c (SIM_CPU *cpu, unsigned_word iw, const struct riscv_opcode *op)
 	{
 	  /* c.ebreak */
 	  TRACE_INSN (cpu, "c.break");
-	  sim_engine_halt (sd, cpu, NULL, cpu->pc, sim_stopped, SIM_SIGTRAP);
+	  sim_engine_halt (sd, cpu, NULL, cpu->pc + 2, sim_stopped, SIM_SIGTRAP);
 	}
       else if (crs2 == 0)
 	{
@@ -1740,7 +1740,7 @@ execute_i (SIM_CPU *cpu, unsigned_word iw, const struct riscv_opcode *op)
     case MATCH_SBREAK:
       TRACE_INSN (cpu, "sbreak;");
       /* GDB expects us to step over SBREAK.  */
-      sim_engine_halt (sd, cpu, NULL, cpu->pc, sim_stopped, SIM_SIGTRAP);
+      sim_engine_halt (sd, cpu, NULL, cpu->pc + 4, sim_stopped, SIM_SIGTRAP);
       break;
     case MATCH_ECALL:
       TRACE_INSN (cpu, "ecall;");
