@@ -1430,6 +1430,7 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 
 	  fprintf (stderr, "\n");
 	}
+      fprintf (stderr, "              Original sp: 0x%lx\n", osp);
       if (current_offsets.arg_offset > 0
 	  || current_offsets.ref_offset > 0)
 	{
