@@ -1073,11 +1073,12 @@ riscv_push_dummy_code (struct gdbarch *gdbarch, CORE_ADDR sp, CORE_ADDR funaddr,
 		       CORE_ADDR *real_pc, CORE_ADDR *bp_addr,
 		       struct regcache *regcache)
 {
+  /* Allocate space for a breakpoint, and keep the stack correctly
+     aligned.  */
+  sp -= 16;
   *bp_addr = sp;
   *real_pc = funaddr;
-
-  /* Keep the stack aligned.  */
-  return sp - 16;
+  return sp;
 }
 
 /* Compute the alignment of the type T.  */
