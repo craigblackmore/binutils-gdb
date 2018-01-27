@@ -202,7 +202,7 @@ set_riscv_command (const char *args, int from_tty)
 }
 
 static uint32_t
-cached_misa ()
+cached_misa (bool *read_p)
 {
   static bool read = false;
   static uint32_t value = 0;
@@ -218,11 +218,14 @@ cached_misa ()
 	{
 	  // In old cores, $misa might live at 0xf10
 	  value = get_frame_register_unsigned (frame,
-					       RISCV_CSR_MISA_REGNUM - 0x301 + 0xf10);
+			RISCV_CSR_MISA_REGNUM - 0x301 + 0xf10);
       }
       END_CATCH
       read = true;
     }
+
+  if (read_p != nullptr)
+    *read_p = read;
 
   return value;
 }
@@ -232,28 +235,30 @@ cached_misa ()
 static int
 riscv_breakpoint_kind_from_pc (struct gdbarch *gdbarch, CORE_ADDR *pcptr)
 {
-  if (use_compressed_breakpoints == AUTO_BOOLEAN_AUTO) {
-    if (gdbarch_tdep (gdbarch)->supports_compressed_isa == AUTO_BOOLEAN_AUTO)
+  if (use_compressed_breakpoints == AUTO_BOOLEAN_AUTO)
     {
-      /* TODO: Because we try to read misa, it is not possible to set a
-         breakpoint before connecting to a live target. A suggested workaround is
-         to look at the ELF file in this case.  */
-      uint32_t misa = cached_misa();
-      if (misa & (1<<2))
-        gdbarch_tdep (gdbarch)->supports_compressed_isa = AUTO_BOOLEAN_TRUE;
-      else
-        gdbarch_tdep (gdbarch)->supports_compressed_isa = AUTO_BOOLEAN_FALSE;
-    }
+      if (gdbarch_tdep (gdbarch)->supports_compressed_isa
+	  == AUTO_BOOLEAN_AUTO)
+	{
+	  /* TODO: Because we try to read misa, it is not possible to set a
+	     breakpoint before connecting to a live target. A suggested
+	     workaround is to look at the ELF file in this case.  */
+	  bool readp;
+	  uint32_t misa = cached_misa(&readp);
+	  if (readp)
+	    gdbarch_tdep (gdbarch)->supports_compressed_isa
+	      = ((misa & (1 << 2)) ? AUTO_BOOLEAN_TRUE : AUTO_BOOLEAN_FALSE);
+	}
 
-    if (gdbarch_tdep (gdbarch)->supports_compressed_isa == AUTO_BOOLEAN_TRUE)
-      return 2;
-    else
-      return 4;
-  } else if (use_compressed_breakpoints == AUTO_BOOLEAN_TRUE) {
+      if (gdbarch_tdep (gdbarch)->supports_compressed_isa == AUTO_BOOLEAN_TRUE)
+	return 2;
+      else
+	return 4;
+    }
+  else if (use_compressed_breakpoints == AUTO_BOOLEAN_TRUE)
     return 2;
-  } else {
+  else
     return 4;
-  }
 }
 
 /* Implement the sw_breakpoint_from_kind gdbarch method.  */
@@ -769,7 +774,7 @@ riscv_register_reggroup_p (struct gdbarch  *gdbarch,
   else if (reggroup == general_reggroup)
     return regnum < RISCV_FIRST_FP_REGNUM;
   else if (reggroup == restore_reggroup || reggroup == save_reggroup) {
-    if (cached_misa() & ((1<<('F'-'A')) | (1<<('D'-'A')) | (1<<('Q'-'A'))))
+    if (cached_misa(nullptr) & ((1<<('F'-'A')) | (1<<('D'-'A')) | (1<<('Q'-'A'))))
       return regnum <= RISCV_LAST_FP_REGNUM;
     else
       return regnum < RISCV_FIRST_FP_REGNUM;
@@ -1648,6 +1653,7 @@ riscv_gdbarch_init (struct gdbarch_info info,
   struct gdbarch *gdbarch;
   struct gdbarch_tdep *tdep;
   const struct bfd_arch_info *binfo = info.bfd_arch_info;
+  enum auto_boolean supports_compressed_isa = AUTO_BOOLEAN_AUTO;
 
   int abi, i;
 
@@ -1658,13 +1664,18 @@ riscv_gdbarch_init (struct gdbarch_info info,
   if (info.abfd && bfd_get_flavour (info.abfd) == bfd_target_elf_flavour)
     {
       unsigned char eclass = elf_elfheader (info.abfd)->e_ident[EI_CLASS];
+      int e_flags = elf_elfheader (info.abfd)->e_flags;
 
       if (eclass == ELFCLASS32)
 	abi = RISCV_ABI_FLAG_RV32I;
       else if (eclass == ELFCLASS64)
 	abi = RISCV_ABI_FLAG_RV64I;
       else
-        internal_error (__FILE__, __LINE__, _("unknown ELF header class %d"), eclass);
+        internal_error (__FILE__, __LINE__,
+			_("unknown ELF header class %d"), eclass);
+
+      if (e_flags & EF_RISCV_RVC)
+	supports_compressed_isa = AUTO_BOOLEAN_TRUE;
     }
   else
     {
@@ -1692,7 +1703,7 @@ riscv_gdbarch_init (struct gdbarch_info info,
   gdbarch = gdbarch_alloc (&info, tdep);
 
   tdep->riscv_abi = abi;
-  tdep->supports_compressed_isa = AUTO_BOOLEAN_AUTO;
+  tdep->supports_compressed_isa = supports_compressed_isa;
 
   /* Target data types.  */
   set_gdbarch_short_bit (gdbarch, 16);
@@ -1728,7 +1739,9 @@ riscv_gdbarch_init (struct gdbarch_info info,
   set_gdbarch_register_reggroup_p (gdbarch, riscv_register_reggroup_p);
 
   /* Functions to analyze frames.  */
-  set_gdbarch_decr_pc_after_break (gdbarch, 4);
+  set_gdbarch_decr_pc_after_break (gdbarch,
+				   (supports_compressed_isa
+				    == AUTO_BOOLEAN_TRUE ? 2 : 4));
   set_gdbarch_skip_prologue (gdbarch, riscv_skip_prologue);
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
   set_gdbarch_frame_align (gdbarch, riscv_frame_align);
