@@ -832,7 +832,7 @@ riscv_print_registers_info (struct gdbarch    *gdbarch,
 }
 
 static ULONGEST
-riscv_fetch_instruction (struct gdbarch *gdbarch, CORE_ADDR addr)
+riscv_fetch_instruction (struct gdbarch *gdbarch, CORE_ADDR addr, int *len)
 {
   enum bfd_endian byte_order = gdbarch_byte_order_for_code (gdbarch);
   gdb_byte buf[8];
@@ -845,6 +845,7 @@ riscv_fetch_instruction (struct gdbarch *gdbarch, CORE_ADDR addr)
 
   /* If we need more, grab it now.  */
   instlen = riscv_insn_length (buf[0]);
+  *len = instlen;
   if (instlen > sizeof (buf))
     internal_error (__FILE__, __LINE__, _("%s: riscv_insn_length returned %i"),
 		    __func__, instlen);
@@ -879,9 +880,210 @@ reset_saved_regs (struct gdbarch *gdbarch, struct riscv_frame_cache *this_cache)
     this_cache->saved_regs[i].addr = 0;
 }
 
-static int riscv_decode_register_index(unsigned long opcode, int offset)
+static int
+riscv_decode_register_index (unsigned long opcode, int offset)
 {
-    return (opcode >> offset) & 0x1F;
+  return (opcode >> offset) & 0x1F;
+}
+
+/* TODO: Fix enum syntax for GDB.  */
+
+enum riscv_insn_mnem
+  {
+   /* These instructions are all the ones we are interested in during the
+      prologue scan.  */
+   ADD,
+   ADDI,
+   ADDIW,
+   ADDW,
+   AUIPC,
+   LUI,
+   SD,
+   SW,
+
+   /* Other instructions are not interesting during the prologue scan, and
+      are ignored.  */
+   OTHER
+  };
+
+static const char *
+riscv_opcode_to_string (enum riscv_insn_mnem opcode)
+{
+  switch (opcode)
+    {
+    case ADD:
+      return "ADD";
+    case ADDI:
+      return "ADDI";
+    case ADDIW:
+      return "ADDIW";
+    case ADDW:
+      return "ADDW";
+    case AUIPC:
+      return "AUIPC";
+    case LUI:
+      return "LUI";
+    case SD:
+      return "SD";
+    case SW:
+      return "SW";
+    case OTHER:
+      return "OTHER";
+    }
+
+  abort ();
+  return nullptr;
+}
+
+struct riscv_insn
+{
+  int length;
+
+  enum riscv_insn_mnem opcode;
+
+  int rd;
+  int rs1;
+  int rs2;
+
+  union
+  {
+    int s;
+    unsigned int u;
+  } imm;
+};
+
+static void
+riscv_decode_r_type_insn (enum riscv_insn_mnem opcode,
+			  ULONGEST ival,
+			  struct riscv_insn *insn)
+{
+  insn->opcode = opcode;
+  insn->rd = riscv_decode_register_index (ival, 7);
+  insn->rs1 = riscv_decode_register_index (ival, 15);
+  insn->rs2 = riscv_decode_register_index (ival, 20);
+}
+
+static void
+riscv_decode_cr_type_insn (enum riscv_insn_mnem opcode,
+			   ULONGEST ival,
+			   struct riscv_insn *insn)
+{
+  insn->opcode = opcode;
+  insn->rd = insn->rs1 = riscv_decode_register_index (ival, 7);
+  insn->rs2 = riscv_decode_register_index (ival, 2);
+}
+
+static void
+riscv_decode_i_type_insn (enum riscv_insn_mnem opcode,
+			  ULONGEST ival,
+			  struct riscv_insn *insn)
+{
+  insn->opcode = opcode;
+  insn->rd = riscv_decode_register_index (ival, 7);
+  insn->rs1 = riscv_decode_register_index (ival, 15);
+  insn->imm.s = EXTRACT_ITYPE_IMM (ival);
+}
+
+static void
+riscv_decode_ci_type_insn (enum riscv_insn_mnem opcode,
+			   ULONGEST ival,
+			   struct riscv_insn *insn)
+{
+  insn->opcode = opcode;
+  insn->rd = insn->rs1 = riscv_decode_register_index (ival, 7);
+  insn->imm.s = EXTRACT_RVC_IMM (ival);
+}
+
+static void
+riscv_decode_s_type_insn (enum riscv_insn_mnem opcode,
+			  ULONGEST ival,
+			  struct riscv_insn *insn)
+{
+  insn->opcode = opcode;
+  insn->rs1 = riscv_decode_register_index (ival, 15);
+  insn->rs2 = riscv_decode_register_index (ival, 20);
+  insn->imm.s = EXTRACT_STYPE_IMM (ival);
+}
+
+static void
+riscv_decode_u_type_insn (enum riscv_insn_mnem opcode,
+			  ULONGEST ival,
+			  struct riscv_insn *insn)
+{
+  insn->opcode = opcode;
+  insn->rd = riscv_decode_register_index (ival, 7);
+  insn->imm.s = EXTRACT_UTYPE_IMM (ival);
+}
+
+/* Fetch from target memory an instruction at PC and decode it into the
+   INSN structure.  */
+
+static void
+riscv_decode_instruction (struct gdbarch *gdbarch,
+			  CORE_ADDR pc,
+			  struct riscv_insn *insn)
+{
+  ULONGEST ival;
+  int len;
+
+  /* Fetch the instruction, and the instructions length.  Compute the
+     next pc we decode.  We don't support instructions longer than 4
+     bytes yet.  */
+  ival = riscv_fetch_instruction (gdbarch, pc, &len);
+  insn->length = len;
+
+  if (len == 4)
+    {
+      if (is_add_insn (ival))
+	riscv_decode_r_type_insn (ADD, ival, insn);
+      else if (is_addw_insn (ival))
+	riscv_decode_r_type_insn (ADDW, ival, insn);
+      else if (is_addi_insn (ival))
+	riscv_decode_i_type_insn (ADDI, ival, insn);
+      else if (is_addiw_insn (ival))
+	riscv_decode_i_type_insn (ADDIW, ival, insn);
+      else if (is_auipc_insn (ival))
+	riscv_decode_u_type_insn (AUIPC, ival, insn);
+      else if (is_lui_insn (ival))
+	riscv_decode_u_type_insn (LUI, ival, insn);
+      else if (is_sd_insn (ival))
+	riscv_decode_s_type_insn (SD, ival, insn);
+      else if (is_sw_insn (ival))
+	riscv_decode_s_type_insn (SW, ival, insn);
+      else
+	/* None of the other fields of INSN are valid in this case.  */
+	insn->opcode = OTHER;
+    }
+  else if (len == 2)
+    {
+      if (is_c_add_insn (ival))
+	riscv_decode_cr_type_insn (ADD, ival, insn);
+      else if (is_c_addw_insn (ival))
+	riscv_decode_cr_type_insn (ADDW, ival, insn);
+      else if (is_c_addi_insn (ival))
+	riscv_decode_ci_type_insn (ADDI, ival, insn);
+      else if (is_c_addiw_insn (ival))
+	riscv_decode_ci_type_insn (ADDIW, ival, insn);
+      else if (is_c_addi16sp_insn (ival))
+	{
+	  insn->opcode = ADDI;
+	  insn->rd = insn->rs1 = riscv_decode_register_index (ival, 7);
+	  insn->imm.s = EXTRACT_RVC_ADDI16SP_IMM (ival);
+	}
+      else if (is_lui_insn (ival))
+	insn->opcode = OTHER;
+      else if (is_c_sd_insn (ival))
+	insn->opcode = OTHER;
+      else if (is_sw_insn (ival))
+	insn->opcode = OTHER;
+      else
+	/* None of the other fields of INSN are valid in this case.  */
+	insn->opcode = OTHER;
+    }
+  else
+    internal_error (__FILE__, __LINE__,
+		    _("unable to decode %d byte instructions in "
+		      "prologue at %s"), len, core_addr_to_string (pc));
 }
 
 static CORE_ADDR
@@ -890,7 +1092,7 @@ riscv_scan_prologue (struct gdbarch *gdbarch,
 		     struct frame_info *this_frame,
 		     struct riscv_frame_cache *this_cache)
 {
-  CORE_ADDR cur_pc;
+  CORE_ADDR cur_pc, next_pc;
   CORE_ADDR frame_addr = 0;
   CORE_ADDR sp;
   long frame_offset;
@@ -913,81 +1115,72 @@ riscv_scan_prologue (struct gdbarch *gdbarch,
 
   frame_offset = 0;
   /* TODO: Handle compressed extensions.  */
-  for (cur_pc = start_pc; cur_pc < limit_pc; cur_pc += 4)
+  for (next_pc = cur_pc = start_pc; cur_pc < limit_pc; cur_pc = next_pc)
     {
-      ULONGEST inst;
-      unsigned long opcode;
-      int reg, rs1, imm12, rs2, offset12, funct3;
+      struct riscv_insn insn;
 
-      /* Fetch the instruction.  */
-      inst = riscv_fetch_instruction (gdbarch, cur_pc);
+      /* Decode the current instruction, and decide where the next
+	 instruction lives based on the size of this instruction.  */
+      riscv_decode_instruction (gdbarch, cur_pc, &insn);
+      gdb_assert (insn.length > 0);
+      next_pc = cur_pc + insn.length;
 
-      /* Decode the instruction.  These offsets are defined in the RISC-V ISA
-       * manual.  */
-      reg = riscv_decode_register_index(inst, 7);
-      rs1 = riscv_decode_register_index(inst, 15);
-      rs2 = riscv_decode_register_index(inst, 20);
-      imm12 = (inst >> 20) & 0xFFF;
-      offset12 = (((inst >> 25) & 0x7F) << 5) + ((inst >> 7) & 0x1F);
+      if (getenv ("APB_PROLOGUE_DEBUG") != nullptr)
+	fprintf (stderr, "APB: 0x%lx %s (%d)\n",
+		 cur_pc, riscv_opcode_to_string (insn.opcode), insn.length);
 
       /* Look for common stack adjustment insns.  */
-      if ((is_addi_insn(inst) || is_addiw_insn(inst))
-	  && reg == RISCV_SP_REGNUM && rs1 == RISCV_SP_REGNUM)
+      if ((insn.opcode == ADDI || insn.opcode == ADDIW)
+	  && insn.rd == RISCV_SP_REGNUM
+	  && insn.rs1 == RISCV_SP_REGNUM)
 	{
 	  /* addi sp, sp, -i */
 	  /* addiw sp, sp, -i */
-	  if (imm12 & 0x800)
-	    frame_offset += 0x1000 - imm12;
+	  if (insn.imm.s < 0)
+	    frame_offset += insn.imm.s;
 	  else
 	    break;
 	  seen_sp_adjust = 1;
 	}
-      else if (is_sw_insn(inst) && rs1 == RISCV_SP_REGNUM)
+      else if ((insn.opcode == SW || insn.opcode == SD)
+	       && (insn.rs1 == RISCV_SP_REGNUM
+		   || insn.rs1 == RISCV_FP_REGNUM))
 	{
-	  /* sw reg, offset(sp) */
-	  set_reg_offset (gdbarch, this_cache, rs1, sp + offset12);
+	  /* sw reg, offset(sp)     OR
+	     sd reg, offset(sp)     OR
+	     sw reg, offset(s0)     OR
+	     sd reg, offset(s0)  */
+	  if (insn.rs1 == RISCV_SP_REGNUM)
+	    set_reg_offset (gdbarch, this_cache, insn.rs1,
+			    sp + insn.imm.s);
+	  else
+	    set_reg_offset (gdbarch, this_cache, insn.rs1,
+			    frame_addr + insn.imm.s);
 	}
-      else if (is_sd_insn(inst) && rs1 == RISCV_SP_REGNUM)
-	{
-	  /* sd reg, offset(sp) */
-	  set_reg_offset (gdbarch, this_cache, rs1, sp + offset12);
-	}
-      else if (is_addi_insn(inst) && reg == RISCV_FP_REGNUM
-	       && rs1 == RISCV_SP_REGNUM)
+      else if (insn.opcode == ADDI
+	       && insn.rd == RISCV_FP_REGNUM
+	       && insn.rs1 == RISCV_SP_REGNUM)
 	{
 	  /* addi s0, sp, size */
-	  if ((long)imm12 != frame_offset)
-	    frame_addr = sp + imm12;
+	  if ((long) insn.imm.s != frame_offset)
+	    frame_addr = sp + insn.imm.s;
 	}
-      else if (this_frame && frame_reg == RISCV_SP_REGNUM)
-	{
-	  unsigned alloca_adjust;
-
-	  frame_reg = RISCV_FP_REGNUM;
-	  frame_addr = get_frame_register_signed (this_frame, RISCV_FP_REGNUM);
-
-	  alloca_adjust = (unsigned)(frame_addr - (sp - imm12));
-	  if (alloca_adjust > 0)
-	    {
-	      sp += alloca_adjust;
-	      reset_saved_regs (gdbarch, this_cache);
-	      goto restart;
-	    }
-	}
-      else if ((is_add_insn(inst) || is_addw_insn(inst))
-	       && reg == RISCV_FP_REGNUM && rs1 == RISCV_SP_REGNUM
-               && rs2 == RISCV_ZERO_REGNUM)
+      else if ((insn.opcode == ADD || insn.opcode == ADDW)
+	       && insn.rd == RISCV_FP_REGNUM
+	       && insn.rs1 == RISCV_SP_REGNUM
+	       && RISCV_ZERO_REGNUM)
 	{
 	  /* add s0, sp, 0 */
 	  /* addw s0, sp, 0 */
 	  if (this_frame && frame_reg == RISCV_SP_REGNUM)
 	    {
 	      unsigned alloca_adjust;
-	      frame_reg = RISCV_FP_REGNUM;
-	      frame_addr = get_frame_register_signed (this_frame,
-						      RISCV_FP_REGNUM);
 
-	      alloca_adjust = (unsigned)(frame_addr - sp);
+	      frame_reg = RISCV_FP_REGNUM;
+	      frame_addr
+		= get_frame_register_signed (this_frame, RISCV_FP_REGNUM);
+
+	      alloca_adjust = (unsigned) (frame_addr - sp);
 	      if (alloca_adjust > 0)
 		{
 		  sp = frame_addr;
@@ -996,23 +1189,24 @@ riscv_scan_prologue (struct gdbarch *gdbarch,
 		}
 	    }
 	}
-      else if (is_sw_insn(inst) && rs1 == RISCV_FP_REGNUM)
-	{
-	  /* sw reg, offset(s0) */
-	  set_reg_offset (gdbarch, this_cache, rs1, frame_addr + offset12);
-	}
-      else if (reg == RISCV_GP_REGNUM
-	       && (is_auipc_insn(inst)
-                   || is_lui_insn(inst)
-		   || (is_addi_insn(inst) && rs1 == RISCV_GP_REGNUM)
-		   || (is_add_insn(inst) && (rs1 == RISCV_GP_REGNUM
-					  || rs2 == RISCV_GP_REGNUM))))
+      else if ((insn.rd == RISCV_GP_REGNUM
+		&& (insn.opcode == AUIPC
+		    || insn.opcode == LUI
+		    || (insn.opcode == ADDI && insn.rs1 == RISCV_GP_REGNUM)
+		    || (insn.opcode == ADD
+			&& (insn.rs1 == RISCV_GP_REGNUM
+			    || insn.rs2 == RISCV_GP_REGNUM))))
+	       || (insn.opcode == ADDI
+		   && insn.rd == RISCV_ZERO_REGNUM
+		   && insn.rs1 == RISCV_ZERO_REGNUM
+		   && insn.imm.s == 0))
 	{
 	  /* auipc gp, n */
 	  /* addi gp, gp, n */
 	  /* add gp, gp, reg */
 	  /* add gp, reg, gp */
 	  /* lui gp, n */
+	  /* add x0, x0, 0   (NOP)   */
 	  /* These instructions are part of the prologue, but we don't need to
 	     do anything special to handle them.  */
 	}
@@ -1025,10 +1219,10 @@ riscv_scan_prologue (struct gdbarch *gdbarch,
 
   if (this_cache != NULL)
     {
-      this_cache->base = get_frame_register_signed (this_frame, frame_reg)
-	+ frame_offset;
-      this_cache->saved_regs[RISCV_PC_REGNUM] =
-	this_cache->saved_regs[RISCV_RA_REGNUM];
+      this_cache->base = (get_frame_register_signed (this_frame, frame_reg)
+			  + frame_offset);
+      this_cache->saved_regs[RISCV_PC_REGNUM]
+	= this_cache->saved_regs[RISCV_RA_REGNUM];
     }
 
   if (end_prologue_addr == 0)
@@ -1049,22 +1243,27 @@ riscv_skip_prologue (struct gdbarch *gdbarch,
   CORE_ADDR limit_pc;
   CORE_ADDR func_addr;
 
-  /* See if we can determine the end of the prologue via the symbol table.
-     If so, then return either PC, or the PC after the prologue, whichever
-     is greater.  */
-  if (find_pc_partial_function (pc, NULL, &func_addr, NULL))
+  if (getenv ("APB_NO_DWARF_PROLOGUE") == NULL)
     {
-      CORE_ADDR post_prologue_pc = skip_prologue_using_sal (gdbarch, func_addr);
-      if (post_prologue_pc != 0)
-	return std::max (pc, post_prologue_pc);
+      /* See if we can determine the end of the prologue via the symbol
+	 table.  If so, then return either PC, or the PC after the
+	 prologue, whichever is greater.  */
+      if (find_pc_partial_function (pc, NULL, &func_addr, NULL))
+	{
+	  CORE_ADDR post_prologue_pc
+	    = skip_prologue_using_sal (gdbarch, func_addr);
+
+	  if (post_prologue_pc != 0)
+	    return std::max (pc, post_prologue_pc);
+	}
     }
 
   /* Can't determine prologue from the symbol table, need to examine
      instructions.  */
 
-  /* Find an upper limit on the function prologue using the debug information.
-     If the debug information could not be used to provide that bound, then use
-     an arbitrary large number as the upper bound.  */
+  /* Find an upper limit on the function prologue using the debug
+     information.  If the debug information could not be used to provide
+     that bound, then use an arbitrary large number as the upper bound.  */
   limit_pc = skip_prologue_using_sal (gdbarch, pc);
   if (limit_pc == 0)
     limit_pc = pc + 100;   /* MAGIC! */
