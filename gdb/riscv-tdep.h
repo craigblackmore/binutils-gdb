@@ -51,8 +51,8 @@ enum {
   RISCV_PC_REGNUM = 32,		/* Program Counter.  */
 
   RISCV_FIRST_FP_REGNUM = 33,	/* First Floating Point Register */
-  RISCV_FA0_REGNUM = 49,
-  RISCV_FA1_REGNUM = 50,
+  RISCV_FA0_REGNUM = 43,
+  RISCV_FA1_REGNUM = RISCV_FA0_REGNUM + 1,
   RISCV_LAST_FP_REGNUM = 64,	/* Last Floating Point Register */
 
   RISCV_FIRST_CSR_REGNUM = 65,  /* First CSR */
@@ -81,16 +81,14 @@ riscv_isa_regsize (struct gdbarch *gdbarch)
 {
   int abi = gdbarch_tdep (gdbarch)->riscv_abi;
 
-  switch (abi)
-    {
-      case RISCV_ABI_FLAG_RV32I:
-	return 4;
-      case RISCV_ABI_FLAG_RV64I:
-	return 8;
-      default:
-	internal_error (__FILE__, __LINE__, _("unknown abi %i"), abi);
-	return 4;
-    }
+  if (IS_RV32I (abi))
+    return 4;
+  else if (IS_RV64I (abi))
+    return 8;
+  else
+    internal_error (__FILE__, __LINE__, _("unknown abi %i"), abi);
+
+  return 0; /* Never reached.  */
 }
 
 #endif /* RISCV_TDEP_H */

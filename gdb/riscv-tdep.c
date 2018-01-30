@@ -461,9 +461,12 @@ riscv_return_value (struct gdbarch  *gdbarch,
 	}
     }
 
+  /* Disable result in floating point register if appropriate.  */
+  if (!HAS_FPU (gdbarch_tdep (gdbarch)->riscv_abi))
+    fp = 0;
+
   /* Handle return value in a register.  */
-  regnum = /* fp ? RISCV_FA0_REGNUM : */ RISCV_A0_REGNUM;
-  (void) fp;
+  regnum = fp ? RISCV_FA0_REGNUM : RISCV_A0_REGNUM;
 
   if (readbuf)
     riscv_extract_return_value (type, regcache, readbuf, regnum);
@@ -1418,21 +1421,41 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
     (struct argument_info *) alloca (nargs * sizeof (struct argument_info));
   struct argument_info *info;
 
-  /* TODO: Some targets will not support FLOAT registers.  */
-  int next_int_regnum = RISCV_A0_REGNUM;
-  int next_flt_regnum = RISCV_FA0_REGNUM;
-  int xlen = riscv_isa_regsize (gdbarch);
+  struct arg_reg
+  {
+    int next_regnum;
+    int last_regnum;
+  } int_reg_arg, float_reg_arg;
+
+  int xlen;
+
+  int_reg_arg.next_regnum = RISCV_A0_REGNUM;
+  int_reg_arg.last_regnum = RISCV_A0_REGNUM + 7;
+
+  float_reg_arg.next_regnum = RISCV_FA0_REGNUM;
+  float_reg_arg.last_regnum = RISCV_FA0_REGNUM + 7;
+
+  /* Disable use of floating point registers if needed.  */
+  if (!HAS_FPU (gdbarch_tdep (gdbarch)->riscv_abi))
+    float_reg_arg.next_regnum = float_reg_arg.last_regnum + 1;
+
+  /* For now assumed that FLEN always equals XLEN.  This might not always
+     be true, but I'm not sure how we figure this out?  Maybe we have to
+     ask the running target.  */
+  xlen = riscv_isa_regsize (gdbarch);
+
   CORE_ADDR osp = sp;
 
   /* We'll use register $a0 if we're returning a struct.  */
   if (struct_return)
-    ++next_int_regnum;
+    ++int_reg_arg.next_regnum;
 
   struct stack_offsets current_offsets = {0, 0};
   for (i = 0, info = &arg_info[0];
        i < nargs;
        ++i, ++info)
     {
+      struct arg_reg *reg_arg = nullptr;
       int next_onstack_size;
       struct value *arg = args[i];
       struct type *arg_type = check_typedef (value_type (arg));
@@ -1445,6 +1468,7 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	case TYPE_CODE_CHAR:
 	case TYPE_CODE_RANGE:
 	case TYPE_CODE_ENUM:
+	  reg_arg = &int_reg_arg;
 	  if (length <= xlen)
 	    {
 	      arg_type = builtin_type (gdbarch)->builtin_long;
@@ -1462,6 +1486,10 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	  break;
 
 	case TYPE_CODE_FLT:
+	  if (float_reg_arg.next_regnum > float_reg_arg.last_regnum)
+	    reg_arg = &int_reg_arg;
+	  else
+	    reg_arg = &float_reg_arg;
 	  /* Aligment is equal to the type length for the basic types.  */
 	  info->align = TYPE_LENGTH (arg_type);
 	  break;
@@ -1469,6 +1497,7 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	case TYPE_CODE_STRUCT:
 	  length = align_up (length, xlen);
 	default:
+	  reg_arg = &int_reg_arg;
 	  info->align = riscv_type_alignment (arg_type);
 	  break;
 	}
@@ -1486,7 +1515,7 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	  current_offsets.ref_offset += info->length;
 	  info->argloc[0].c_length = info->length;
 
-	  if (next_int_regnum > (RISCV_A0_REGNUM + 7))
+	  if (reg_arg->next_regnum > reg_arg->last_regnum)
 	    {
 	      /* Address is on the stack.  */
 	      info->argloc[1].loc_type
@@ -1501,11 +1530,11 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	      /* Address is in a register.  */
 	      info->argloc[1].loc_type
 		= argument_info::argument_location::in_reg;
-	      info->argloc[1].loc_data.regno = next_int_regnum;
-	      ++next_int_regnum;
+	      info->argloc[1].loc_data.regno = reg_arg->next_regnum;
+	      ++reg_arg->next_regnum;
 	    }
 	}
-      else if (next_int_regnum > (RISCV_A0_REGNUM + 7))
+      else if (reg_arg->next_regnum > reg_arg->last_regnum)
 	{
 	  /* Whole argument is on the stack.  */
 	  info->argloc[0].loc_type
@@ -1520,8 +1549,8 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 	  /* At least the first part of the argument is in a register.  */
 	  info->argloc[0].loc_type
 	    = argument_info::argument_location::in_reg;
-	  info->argloc[0].loc_data.regno = next_int_regnum;
-	  ++next_int_regnum;
+	  info->argloc[0].loc_data.regno = reg_arg->next_regnum;
+	  ++reg_arg->next_regnum;
 
 	  if (info->length <= xlen)
 	    info->argloc[0].c_length = info->length;
@@ -1534,7 +1563,7 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 
 	      /* Second part of the argument might be in a register, or on
 		 the stack, if there are no more registers. */
-	      if (next_int_regnum > (RISCV_A0_REGNUM + 7))
+	      if (reg_arg->next_regnum > reg_arg->last_regnum)
 		{
 		  /* Second part on the stack.  */
 		  info->argloc[1].loc_type
@@ -1548,8 +1577,8 @@ riscv_push_dummy_call (struct gdbarch *gdbarch,
 		  /* Second part in a register. */
 		  info->argloc[1].loc_type
 		    = argument_info::argument_location::in_reg;
-		  info->argloc[1].loc_data.regno = next_int_regnum;
-		  ++next_int_regnum;
+		  info->argloc[1].loc_data.regno = reg_arg->next_regnum;
+		  ++reg_arg->next_regnum;
 		}
 	    }
 	}
