@@ -1904,6 +1904,12 @@ riscv_gdbarch_init (struct gdbarch_info info,
 
       if (e_flags & EF_RISCV_RVC)
 	supports_compressed_isa = AUTO_BOOLEAN_TRUE;
+
+      if (e_flags & EF_RISCV_FLOAT_ABI_DOUBLE)
+	abi |= RISCV_ABI_FLAG_D;
+
+      if (e_flags & EF_RISCV_FLOAT_ABI_SINGLE)
+	abi |= RISCV_ABI_FLAG_F;
     }
   else
     {
