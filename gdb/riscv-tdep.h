@@ -91,4 +91,14 @@ riscv_isa_regsize (struct gdbarch *gdbarch)
   return 0; /* Never reached.  */
 }
 
+static inline int
+riscv_isa_fregsize (struct gdbarch *gdbarch)
+{
+  /* This is not correct, but will do in the short term.  This will go
+     wrong if a rv32 machine has the double-precision floating point
+     extension, or an rv64 machine only has the single-precision floating
+     point extension.  */
+  return riscv_isa_regsize (gdbarch);
+}
+
 #endif /* RISCV_TDEP_H */
