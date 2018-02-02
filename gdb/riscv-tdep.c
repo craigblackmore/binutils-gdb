@@ -362,18 +362,22 @@ static struct type *
 riscv_register_type (struct gdbarch *gdbarch,
 		     int regnum)
 {
-  int regsize = riscv_isa_regsize (gdbarch);
+  int regsize;
 
   if (regnum < RISCV_FIRST_FP_REGNUM)
     {
-      /*
-       * GPRs and especially the PC are listed as unsigned so that gdb can
-       * interpret them as addresses without any problems. Specifically, if a
-       * user runs "x/i $pc" then they should see the instruction at the PC.
-       * But on a 32-bit system, with a signed PC of eg. 0x8000_0000, gdb will
-       * internally sign extend the value and then attempt to read from
-       * 0xffff_ffff_8000_0000, which it then concludes it can't read.
-       */
+      if (regnum == gdbarch_pc_regnum (gdbarch)
+	  || regnum == RISCV_RA_REGNUM)
+	return builtin_type (gdbarch)->builtin_func_ptr;
+
+      if (regnum == RISCV_FP_REGNUM
+	  || regnum == RISCV_SP_REGNUM
+	  || regnum == RISCV_GP_REGNUM
+	  || regnum == RISCV_TP_REGNUM)
+	return builtin_type (gdbarch)->builtin_data_ptr;
+
+      /* Remaining GPRs vary in size based on the current ISA.  */
+      regsize = riscv_isa_regsize (gdbarch);
       switch (regsize)
 	{
 	case 4:
@@ -389,6 +393,7 @@ riscv_register_type (struct gdbarch *gdbarch,
     }
   else if (regnum <= RISCV_LAST_FP_REGNUM)
     {
+      regsize = riscv_isa_regsize (gdbarch);
       switch (regsize)
 	{
 	case 4:
@@ -412,6 +417,7 @@ riscv_register_type (struct gdbarch *gdbarch,
 	  || regnum == RISCV_CSR_FCSR_REGNUM)
 	return builtin_type (gdbarch)->builtin_int32;
 
+      regsize = riscv_isa_regsize (gdbarch);
       switch (regsize)
 	{
 	case 4:
@@ -428,174 +434,184 @@ riscv_register_type (struct gdbarch *gdbarch,
 }
 
 static void
-riscv_print_fp_register (struct ui_file *file, struct frame_info *frame,
-			 int regnum)
+riscv_print_one_register_info (struct gdbarch *gdbarch,
+			       struct ui_file *file,
+			       struct frame_info *frame,
+			       int regnum)
 {
-  struct value_print_options opts;
-  value *val = get_frame_register_value (frame, regnum);
+  const char *name = register_name (gdbarch, regnum, 1);
+  struct value *val = value_of_register (regnum, frame);
+  struct type *regtype = value_type (val);
+  int print_raw_format;
 
-  get_formatted_print_options (&opts, 'f');
-  val_print_scalar_formatted (value_type (val),
-			      value_embedded_offset (val),
-			      val,
-			      &opts, 0, file);
-}
-
-static void
-riscv_print_register_formatted (struct ui_file *file,
-				struct frame_info *frame,
-				int regnum)
-{
-  struct gdbarch *gdbarch = get_frame_arch (frame);
-  gdb_byte raw_buffer[MAX_REGISTER_SIZE];
-  struct value_print_options opts;
-  const char *name;
-
-  name = register_name (gdbarch, regnum, 1);
   fputs_filtered (name, file);
   print_spaces_filtered (15 - strlen (name), file);
 
-  if (regnum >= RISCV_FIRST_FP_REGNUM && regnum <= RISCV_LAST_FP_REGNUM)
-    riscv_print_fp_register (file, frame, regnum);
+  print_raw_format = (value_entirely_available (val)
+		      && !value_optimized_out (val));
+
+  if (TYPE_CODE (regtype) == TYPE_CODE_FLT)
+    {
+      struct value_print_options opts;
+      const gdb_byte *valaddr = value_contents_for_printing (val);
+      enum bfd_endian byte_order = gdbarch_byte_order (get_type_arch (regtype));
+
+      get_user_print_options (&opts);
+      opts.deref_ref = 1;
+
+      val_print (regtype,
+		 value_embedded_offset (val), 0,
+		 file, 0, val, &opts, current_language);
+
+      if (print_raw_format)
+	{
+	  fprintf_filtered (file, "\t(raw ");
+	  print_hex_chars (file, valaddr, TYPE_LENGTH (regtype), byte_order,
+			   true);
+	  fprintf_filtered (file, ")");
+	}
+    }
   else
     {
-      /* Integer type.  */
-      int offset, size;
-      unsigned long long d;
+      struct value_print_options opts;
 
-      if (!deprecated_frame_register_read (frame, regnum, raw_buffer))
-	{
-	  fprintf_filtered (file, "[Invalid]\n");
-	  return;
-	}
-
-      if (gdbarch_byte_order (gdbarch) == BFD_ENDIAN_BIG)
-	offset = (register_size (gdbarch, regnum)
-		  - register_size (gdbarch, regnum));
-      else
-	offset = 0;
-
-      size = register_size (gdbarch, regnum);
+      /* Print the register in hex.  */
       get_formatted_print_options (&opts, 'x');
-      print_scalar_formatted (raw_buffer + offset,
-			      register_type (gdbarch, regnum), &opts,
-			      0, file);
-      fprintf_filtered (file, "\t");
-      if (size == 4 && riscv_isa_regsize (gdbarch) == 8)
-	fprintf_filtered (file, "\t");
+      opts.deref_ref = 1;
+      val_print (regtype,
+		 value_embedded_offset (val), 0,
+		 file, 0, val, &opts, current_language);
 
-      if (regnum == RISCV_CSR_MSTATUS_REGNUM)
+      if (print_raw_format)
 	{
-	  if (size == 4)
-	    d = unpack_long (builtin_type (gdbarch)->builtin_uint32, raw_buffer);
-	  else if (size == 8)
-	    d = unpack_long (builtin_type (gdbarch)->builtin_uint64, raw_buffer);
-	  else
-	    internal_error (__FILE__, __LINE__, _("unknown size for mstatus"));
-	  unsigned xlen = size * 4;
-	  fprintf_filtered (file,
-			    "SD:%X VM:%02X MXR:%X PUM:%X MPRV:%X XS:%X "
-			    "FS:%X MPP:%x HPP:%X SPP:%X MPIE:%X HPIE:%X "
-			    "SPIE:%X UPIE:%X MIE:%X HIE:%X SIE:%X UIE:%X",
-			    (int)((d >> (xlen-1)) & 0x1),
-			    (int)((d >> 24) & 0x1f),
-			    (int)((d >> 19) & 0x1),
-			    (int)((d >> 18) & 0x1),
-			    (int)((d >> 17) & 0x1),
-			    (int)((d >> 15) & 0x3),
-			    (int)((d >> 13) & 0x3),
-			    (int)((d >> 11) & 0x3),
-			    (int)((d >> 9) & 0x3),
-			    (int)((d >> 8) & 0x1),
-			    (int)((d >> 7) & 0x1),
-			    (int)((d >> 6) & 0x1),
-			    (int)((d >> 5) & 0x1),
-			    (int)((d >> 4) & 0x1),
-			    (int)((d >> 3) & 0x1),
-			    (int)((d >> 2) & 0x1),
-			    (int)((d >> 1) & 0x1),
-			    (int)((d >> 0) & 0x1));
-	}
-      else if (regnum == RISCV_CSR_MISA_REGNUM)
-        {
-          int base;
-          if (size == 4) {
-            d = unpack_long (builtin_type (gdbarch)->builtin_uint32, raw_buffer);
-            base = d >> 30;
-          } else if (size == 8) {
-            d = unpack_long (builtin_type (gdbarch)->builtin_uint64, raw_buffer);
-            base = d >> 62;
-          } else {
-            internal_error (__FILE__, __LINE__, _("unknown size for misa"));
-          }
-          unsigned xlen = 16;
-          for (; base > 0; base--) {
-            xlen *= 2;
-          }
-	  fprintf_filtered (file, "RV%d", xlen);
-
-          for (unsigned i = 0; i < 26; i++) {
-            if (d & (1<<i)) {
-              fprintf_filtered (file, "%c", 'A' + i);
-            }
-          }
-        }
-      else if (regnum == RISCV_CSR_FCSR_REGNUM
-	       || regnum == RISCV_CSR_FFLAGS_REGNUM
-	       || regnum == RISCV_CSR_FRM_REGNUM)
-	{
-	  d = unpack_long (builtin_type (gdbarch)->builtin_int32, raw_buffer);
-
-	  if (regnum != RISCV_CSR_FRM_REGNUM)
-	    fprintf_filtered (file, "RD:%01X NV:%d DZ:%d OF:%d UF:%d NX:%d   ",
-			      (int)((d >> 5) & 0x7),
-			      (int)((d >> 4) & 0x1),
-			      (int)((d >> 3) & 0x1),
-			      (int)((d >> 2) & 0x1),
-			      (int)((d >> 1) & 0x1),
-			      (int)((d >> 0) & 0x1));
-
-	  if (regnum != RISCV_CSR_FFLAGS_REGNUM)
+	  if (regnum == RISCV_CSR_MSTATUS_REGNUM)
 	    {
-	      static const char * const sfrm[] = {
-		"RNE (round to nearest; ties to even)",
-		"RTZ (Round towards zero)",
-		"RDN (Round down towards -∞)",
-		"RUP (Round up towards +∞)",
-		"RMM (Round to nearest; tiest to max magnitude)",
-		"INVALID[5]",
-		"INVALID[6]",
-		"dynamic rounding mode",
-	      };
-	      int frm = ((regnum == RISCV_CSR_FCSR_REGNUM) ? (d >> 5) : d) & 0x3;
+	      LONGEST d;
+	      int size = register_size (gdbarch, regnum);
+	      unsigned xlen;
 
-	      fprintf_filtered (file, "FRM:%i [%s]", frm, sfrm[frm]);
+	      d = value_as_long (val);
+	      xlen = size * 4;
+	      fprintf_filtered (file,
+				"\tSD:%X VM:%02X MXR:%X PUM:%X MPRV:%X XS:%X "
+				"FS:%X MPP:%x HPP:%X SPP:%X MPIE:%X HPIE:%X "
+				"SPIE:%X UPIE:%X MIE:%X HIE:%X SIE:%X UIE:%X",
+				(int) ((d >> (xlen - 1)) & 0x1),
+				(int) ((d >> 24) & 0x1f),
+				(int) ((d >> 19) & 0x1),
+				(int) ((d >> 18) & 0x1),
+				(int) ((d >> 17) & 0x1),
+				(int) ((d >> 15) & 0x3),
+				(int) ((d >> 13) & 0x3),
+				(int) ((d >> 11) & 0x3),
+				(int) ((d >> 9) & 0x3),
+				(int) ((d >> 8) & 0x1),
+				(int) ((d >> 7) & 0x1),
+				(int) ((d >> 6) & 0x1),
+				(int) ((d >> 5) & 0x1),
+				(int) ((d >> 4) & 0x1),
+				(int) ((d >> 3) & 0x1),
+				(int) ((d >> 2) & 0x1),
+				(int) ((d >> 1) & 0x1),
+				(int) ((d >> 0) & 0x1));
 	    }
-	}
-      else if (regnum == RISCV_PRIV_REGNUM)
-        {
-          uint8_t priv = raw_buffer[0];
-          if (priv >= 0 && priv < 4)
-            {
-              static const char * const sprv[] = {
-                "User/Application",
-                "Supervisor",
-                "Hypervisor",
-                "Machine"
-              };
-              fprintf_filtered (file, "prv:%d [%s]", priv, sprv[priv]);
-            }
-          else
-            {
-              fprintf_filtered (file, "prv:%d [INVALID]", priv);
-            }
-        }
-      else
-	{
-	  get_formatted_print_options (&opts, 'd');
-	  print_scalar_formatted (raw_buffer + offset,
-				  register_type (gdbarch, regnum),
-				  &opts, 0, file);
+	  else if (regnum == RISCV_CSR_MISA_REGNUM)
+	    {
+	      int base;
+	      unsigned xlen, i;
+	      LONGEST d;
+
+	      d = value_as_long (val);
+	      base = d >> 30;
+	      xlen = 16;
+
+	      for (; base > 0; base--)
+		xlen *= 2;
+	      fprintf_filtered (file, "\tRV%d", xlen);
+
+	      for (i = 0; i < 26; i++)
+		{
+		  if (d & (1 << i))
+		    fprintf_filtered (file, "%c", 'A' + i);
+		}
+	    }
+	  else if (regnum == RISCV_CSR_FCSR_REGNUM
+		   || regnum == RISCV_CSR_FFLAGS_REGNUM
+		   || regnum == RISCV_CSR_FRM_REGNUM)
+	    {
+	      LONGEST d;
+
+	      d = value_as_long (val);
+
+	      fprintf_filtered (file, "\t");
+	      if (regnum != RISCV_CSR_FRM_REGNUM)
+		fprintf_filtered (file,
+				  "RD:%01X NV:%d DZ:%d OF:%d UF:%d NX:%d",
+				  (int) ((d >> 5) & 0x7),
+				  (int) ((d >> 4) & 0x1),
+				  (int) ((d >> 3) & 0x1),
+				  (int) ((d >> 2) & 0x1),
+				  (int) ((d >> 1) & 0x1),
+				  (int) ((d >> 0) & 0x1));
+
+	      if (regnum != RISCV_CSR_FFLAGS_REGNUM)
+		{
+		  static const char * const sfrm[] =
+		    {
+		     "RNE (round to nearest; ties to even)",
+		     "RTZ (Round towards zero)",
+		     "RDN (Round down towards -∞)",
+		     "RUP (Round up towards +∞)",
+		     "RMM (Round to nearest; tiest to max magnitude)",
+		     "INVALID[5]",
+		     "INVALID[6]",
+		     "dynamic rounding mode",
+		    };
+		  int frm = ((regnum == RISCV_CSR_FCSR_REGNUM)
+			     ? (d >> 5) : d) & 0x3;
+
+		  fprintf_filtered (file, "%sFRM:%i [%s]",
+				    (regnum == RISCV_CSR_FCSR_REGNUM
+				     ? " " : ""),
+				    frm, sfrm[frm]);
+		}
+	    }
+	  else if (regnum == RISCV_PRIV_REGNUM)
+	    {
+	      LONGEST d;
+	      uint8_t priv;
+
+	      d = value_as_long (val);
+	      priv = d & 0xff;
+
+	      if (priv >= 0 && priv < 4)
+		{
+		  static const char * const sprv[] = {
+						      "User/Application",
+						      "Supervisor",
+						      "Hypervisor",
+						      "Machine"
+		  };
+		  fprintf_filtered (file, "\tprv:%d [%s]",
+				    priv, sprv[priv]);
+		}
+	      else
+		fprintf_filtered (file, "\tprv:%d [INVALID]", priv);
+	    }
+	  else
+	    {
+	      /* If not a vector register, print it also according to its
+		 natural format.  */
+	      if (TYPE_VECTOR (regtype) == 0)
+		{
+		  get_user_print_options (&opts);
+		  opts.deref_ref = 1;
+		  fprintf_filtered (file, "\t");
+		  val_print (regtype,
+			     value_embedded_offset (val), 0,
+			     file, 0, val, &opts, current_language);
+		}
+	    }
 	}
     }
   fprintf_filtered (file, "\n");
@@ -681,39 +697,50 @@ riscv_register_reggroup_p (struct gdbarch  *gdbarch,
     internal_error (__FILE__, __LINE__, _("unhandled reggroup"));
 }
 
-/* Implement the print_registers_info gdbarch method.  */
+/* Implement the print_registers_info gdbarch method.  This is used by
+   'info registers' and 'info all-registers'.  */
 
 static void
-riscv_print_registers_info (struct gdbarch    *gdbarch,
-			    struct ui_file    *file,
+riscv_print_registers_info (struct gdbarch *gdbarch,
+			    struct ui_file *file,
 			    struct frame_info *frame,
-			    int                regnum,
-			    int                all)
+			    int regnum, int print_all)
 {
-  /* Use by 'info all-registers'.  */
-  struct reggroup *reggroup;
-
   if (regnum != -1)
     {
       /* Print one specified register.  */
       gdb_assert (regnum <= RISCV_LAST_REGNUM);
-      if (NULL == register_name (gdbarch, regnum, 1))
+      if (gdbarch_register_name (gdbarch, regnum) == NULL
+	  || *(gdbarch_register_name (gdbarch, regnum)) == '\0')
         error (_("Not a valid register for the current processor type"));
-      riscv_print_register_formatted (file, frame, regnum);
-      return;
+      riscv_print_one_register_info (gdbarch, file, frame, regnum);
     }
-
-  if (all)
-    reggroup = all_reggroup;
   else
-    reggroup = general_reggroup;
-  for (regnum = 0; regnum <= RISCV_LAST_REGNUM; ++regnum)
     {
-      /* Zero never changes, so might as well hide by default.  */
-      if (regnum == RISCV_ZERO_REGNUM && !all)
-        continue;
-      if (riscv_register_reggroup_p(gdbarch, regnum, reggroup))
-        riscv_print_register_formatted (file, frame, regnum);
+      struct reggroup *reggroup;
+
+      if (print_all)
+	reggroup = all_reggroup;
+      else
+	reggroup = general_reggroup;
+
+      for (regnum = 0; regnum <= RISCV_LAST_REGNUM; ++regnum)
+	{
+	  /* Zero never changes, so might as well hide by default.  */
+	  if (regnum == RISCV_ZERO_REGNUM && !print_all)
+	    continue;
+
+	  /* Registers with no name are not valid on this ISA.  */
+	  if (gdbarch_register_name (gdbarch, regnum) == NULL
+	      || *(gdbarch_register_name (gdbarch, regnum)) == '\0')
+	    continue;
+
+	  /* Is the register in the group we're interested in?  */
+	  if (!riscv_register_reggroup_p (gdbarch, regnum, reggroup))
+	    continue;
+
+	  riscv_print_one_register_info (gdbarch, file, frame, regnum);
+	}
     }
 }
 
@@ -1182,6 +1209,7 @@ riscv_type_alignment (struct type *t)
     default:
       error (_("Could not compute alignment of type"));
 
+    case TYPE_CODE_RVALUE_REF:
     case TYPE_CODE_PTR:
     case TYPE_CODE_ENUM:
     case TYPE_CODE_INT:
@@ -1203,7 +1231,7 @@ riscv_type_alignment (struct type *t)
 
 	for (i = 0; i < TYPE_NFIELDS (t); ++i)
 	  {
-	    if (TYPE_FIELD_BITSIZE (t, i) > 0)
+	    if (TYPE_FIELD_LOC_KIND (t, i) == FIELD_LOC_KIND_BITPOS)
 	      {
 		int a = riscv_type_alignment (TYPE_FIELD_TYPE (t, i));
 		if (a > align)
@@ -1441,7 +1469,7 @@ riscv_struct_analysis_for_call_1 (struct type *type,
 
   for (i = 0; i < count; ++i)
     {
-      if (TYPE_FIELD_BITSIZE (type, i) == 0)
+      if (TYPE_FIELD_LOC_KIND (type, i) != FIELD_LOC_KIND_BITPOS)
 	continue;
 
       struct type *field_type = TYPE_FIELD_TYPE (type, i);
