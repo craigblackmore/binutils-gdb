@@ -2063,14 +2063,6 @@ static const struct frame_unwind mep_frame_unwind = {
 };
 
 
-/* Our general unwinding function can handle unwinding the PC.  */
-static CORE_ADDR
-mep_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, MEP_PC_REGNUM);
-}
-
-
 /* Our general unwinding function can handle unwinding the SP.  */
 static CORE_ADDR
 mep_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
@@ -2463,7 +2455,6 @@ mep_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   /* Frames and frame unwinding.  */
   frame_unwind_append_unwinder (gdbarch, &mep_frame_unwind);
-  set_gdbarch_unwind_pc (gdbarch, mep_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, mep_unwind_sp);
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
   set_gdbarch_frame_args_skip (gdbarch, 0);

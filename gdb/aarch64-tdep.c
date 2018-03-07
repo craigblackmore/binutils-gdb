@@ -1014,17 +1014,6 @@ aarch64_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 			 get_frame_pc (this_frame));
 }
 
-/* Implement the "unwind_pc" gdbarch method.  */
-
-static CORE_ADDR
-aarch64_unwind_pc (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR pc
-    = frame_unwind_register_unsigned (this_frame, AARCH64_PC_REGNUM);
-
-  return pc;
-}
-
 /* Implement the "unwind_sp" gdbarch method.  */
 
 static CORE_ADDR
@@ -2952,7 +2941,6 @@ aarch64_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   /* Frame handling.  */
   set_gdbarch_dummy_id (gdbarch, aarch64_dummy_id);
-  set_gdbarch_unwind_pc (gdbarch, aarch64_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, aarch64_unwind_sp);
 
   /* Advance PC across function entry code.  */

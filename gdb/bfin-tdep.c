@@ -767,12 +767,6 @@ bfin_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 }
 
 static CORE_ADDR
-bfin_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, BFIN_PC_REGNUM);
-}
-
-static CORE_ADDR
 bfin_frame_align (struct gdbarch *gdbarch, CORE_ADDR address)
 {
   return (address & ~0x3);
@@ -836,7 +830,6 @@ bfin_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, bfin_sw_breakpoint_from_kind);
   set_gdbarch_decr_pc_after_break (gdbarch, 2);
   set_gdbarch_frame_args_skip (gdbarch, 8);
-  set_gdbarch_unwind_pc (gdbarch, bfin_unwind_pc);
   set_gdbarch_frame_align (gdbarch, bfin_frame_align);
 
   /* Hook in ABI-specific overrides, if they have been registered.  */

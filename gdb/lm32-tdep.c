@@ -383,12 +383,6 @@ lm32_return_value (struct gdbarch *gdbarch, struct value *function,
 }
 
 static CORE_ADDR
-lm32_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, SIM_LM32_PC_REGNUM);
-}
-
-static CORE_ADDR
 lm32_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
 {
   return frame_unwind_register_unsigned (next_frame, SIM_LM32_SP_REGNUM);
@@ -551,7 +545,6 @@ lm32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /* Frame unwinding.  */
   set_gdbarch_frame_align (gdbarch, lm32_frame_align);
   frame_base_set_default (gdbarch, &lm32_frame_base);
-  set_gdbarch_unwind_pc (gdbarch, lm32_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, lm32_unwind_sp);
   set_gdbarch_dummy_id (gdbarch, lm32_dummy_id);
   frame_unwind_append_unwinder (gdbarch, &lm32_frame_unwind);

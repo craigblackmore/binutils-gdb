@@ -193,6 +193,15 @@ default_frame_unwind_stop_reason (struct frame_info *this_frame,
     return UNWIND_NO_REASON;
 }
 
+/* Default unwind of the PC.  */
+
+CORE_ADDR
+default_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
+{
+  int pc_regnum = gdbarch_pc_regnum (gdbarch);
+  return frame_unwind_register_unsigned (next_frame, pc_regnum);
+}
+
 /* Helper functions for value-based register unwinding.  These return
    a (possibly lazy) value of the appropriate type.  */
 

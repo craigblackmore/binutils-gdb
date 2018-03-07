@@ -1366,12 +1366,6 @@ frv_return_value (struct gdbarch *gdbarch, struct value *function,
     return RETURN_VALUE_REGISTER_CONVENTION;
 }
 
-static CORE_ADDR
-frv_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, pc_regnum);
-}
-
 /* Given a GDB frame, determine the address of the calling function's
    frame.  This will be used to create a new GDB frame struct.  */
 
@@ -1539,7 +1533,6 @@ frv_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_return_value (gdbarch, frv_return_value);
 
   /* Frame stuff.  */
-  set_gdbarch_unwind_pc (gdbarch, frv_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, frv_unwind_sp);
   set_gdbarch_frame_align (gdbarch, frv_frame_align);
   frame_base_set_default (gdbarch, &frv_frame_base);

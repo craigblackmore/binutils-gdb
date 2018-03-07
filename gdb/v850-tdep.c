@@ -1333,13 +1333,6 @@ v850_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
 					 gdbarch_sp_regnum (gdbarch));
 } 
 
-static CORE_ADDR
-v850_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame,
-					 gdbarch_pc_regnum (gdbarch));
-}
-
 static struct frame_id
 v850_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
@@ -1465,7 +1458,6 @@ v850_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_frame_align (gdbarch, v850_frame_align);
   set_gdbarch_unwind_sp (gdbarch, v850_unwind_sp);
-  set_gdbarch_unwind_pc (gdbarch, v850_unwind_pc);
   set_gdbarch_dummy_id (gdbarch, v850_dummy_id);
   frame_base_set_default (gdbarch, &v850_frame_base);
 

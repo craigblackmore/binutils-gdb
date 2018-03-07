@@ -651,9 +651,6 @@ static CORE_ADDR crisv32_scan_prologue (CORE_ADDR pc,
 					struct frame_info *this_frame,
 					struct cris_unwind_cache *info);
 
-static CORE_ADDR cris_unwind_pc (struct gdbarch *gdbarch, 
-				 struct frame_info *next_frame);
-
 static CORE_ADDR cris_unwind_sp (struct gdbarch *gdbarch, 
 				 struct frame_info *next_frame);
 
@@ -1371,15 +1368,6 @@ cris_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
     pc_after_prologue = cris_scan_prologue (pc, NULL, NULL);
 
   return pc_after_prologue;
-}
-
-static CORE_ADDR
-cris_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  ULONGEST pc;
-  pc = frame_unwind_register_unsigned (next_frame,
-				       gdbarch_pc_regnum (gdbarch));
-  return pc;
 }
 
 static CORE_ADDR
@@ -4096,7 +4084,6 @@ cris_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_breakpoint_kind_from_pc (gdbarch, cris_breakpoint_kind_from_pc);
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, cris_sw_breakpoint_from_kind);
   
-  set_gdbarch_unwind_pc (gdbarch, cris_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, cris_unwind_sp);
   set_gdbarch_dummy_id (gdbarch, cris_dummy_id);
 

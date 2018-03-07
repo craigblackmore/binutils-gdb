@@ -757,12 +757,6 @@ xstormy16_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
   return frame_unwind_register_unsigned (next_frame, E_SP_REGNUM);
 }
 
-static CORE_ADDR
-xstormy16_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, E_PC_REGNUM);
-}
-
 static struct frame_id
 xstormy16_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
@@ -825,7 +819,6 @@ xstormy16_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
    * Frame Info
    */
   set_gdbarch_unwind_sp (gdbarch, xstormy16_unwind_sp);
-  set_gdbarch_unwind_pc (gdbarch, xstormy16_unwind_pc);
   set_gdbarch_dummy_id (gdbarch, xstormy16_dummy_id);
   set_gdbarch_frame_align (gdbarch, xstormy16_frame_align);
   frame_base_set_default (gdbarch, &xstormy16_frame_base);

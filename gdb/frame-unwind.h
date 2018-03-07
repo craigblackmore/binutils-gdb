@@ -70,6 +70,12 @@ enum unwind_stop_reason
   default_frame_unwind_stop_reason (struct frame_info *this_frame,
 				    void **this_cache);
 
+/* A default unwind_pc callback that simply unwinds the register identified
+   by GDBARCH_PC_REGNUM.  */
+
+extern CORE_ADDR default_unwind_pc (struct gdbarch *gdbarch,
+				    struct frame_info *next_frame);
+
 /* Assuming the frame chain: (outer) prev <-> this <-> next (inner);
    use THIS frame, and through it the NEXT frame's register unwind
    method, to determine the frame ID of THIS frame.

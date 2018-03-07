@@ -1,3 +1,65 @@
+2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* aarch64-tdep.c (aarch64_unwind_pc): Deleted.
+	(aarch64_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* alpha-tdep.c (alpha_unwind_pc): Deleted.
+	(alpha_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* bfin-tdep.c (bfin_unwind_pc): Deleted.
+	(bfin_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* cris-tdep.c (cris_unwind_pc): Deleted.
+	(cris_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* frame-unwind.c (default_unwind_pc): New function.
+	* frame-unwind.h (default_unwind_pc): Declare new function.
+	* frame.c: Remove use of gdbarch_unwind_pc_p and reindent.
+	* frv-tdep.c (frv_unwind_pc): Deleted.
+	(frv_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* ft32-tdep.c (ft32_unwind_pc): Deleted.
+	(ft32_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* gdbarch.c: Regenerate.
+	* gdbarch.h: Regenerate.
+	* gdbarch.sh: Update unwind_pc spec, and add new header file to be
+	included.
+	* h8300-tdep.c (h8300_unwind_pc): Deleted.
+	(h8300_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* iq2000-tdep.c (iq2000_unwind_pc): Deleted.
+	(iq2000_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* lm32-tdep.c (lm32_unwind_pc): Deleted.
+	(lm32_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* m32r-tdep.c (m32r_unwind_pc): Deleted.
+	(m32r_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* m68hc11-tdep.c (m68hc11_unwind_pc): Deleted.
+	(m68hc11_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* mep-tdep.c (mep_unwind_pc): Deleted.
+	(mep_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* mn10300-tdep.c (mn10300_unwind_pc): Deleted.
+	(mn10300_frame_unwind_init): Delete use of set_gdbarch_unwind_pc.
+	* moxie-tdep.c (moxie_unwind_pc): Deleted.
+	(moxie_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* msp430-tdep.c (msp430_unwind_pc): Deleted.
+	(msp430_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* nds32-tdep.c (nds32_unwind_pc): Deleted.
+	(nds32_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* riscv-tdep.c (riscv_unwind_pc): Deleted.
+	(riscv_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* rs6000-tdep.c (rs6000_unwind_pc): Deleted.
+	(rs6000_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* rx-tdep.c (rx_unwind_pc): Deleted.
+	(rx_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* score-tdep.c (score_unwind_pc): Deleted.
+	(score_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* sh-tdep.c (sh_unwind_pc): Deleted.
+	(sh_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* sparc-tdep.c (sparc_unwind_pc): Deleted.
+	(sparc32_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* tilegx-tdep.c (tilegx_unwind_pc): Deleted.
+	(tilegx_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* v850-tdep.c (v850_unwind_pc): Deleted.
+	(v850_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* vax-tdep.c (vax_unwind_pc): Deleted.
+	(vax_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* xstormy16-tdep.c (xstormy16_unwind_pc): Deleted.
+	(xstormy16_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+
 2018-06-04  Tom Tromey  <tom@tromey.com>
 
 	* ada-lang.h (ada_lookup_symbol_list): Update.

@@ -2322,14 +2322,6 @@ riscv_frame_align (struct gdbarch *gdbarch, CORE_ADDR addr)
   return align_down (addr, 16);
 }
 
-/* Implement the unwind_pc gdbarch method.  */
-
-static CORE_ADDR
-riscv_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, RISCV_PC_REGNUM);
-}
-
 /* Implement the unwind_sp gdbarch method.  */
 
 static CORE_ADDR
@@ -2544,7 +2536,6 @@ riscv_gdbarch_init (struct gdbarch_info info,
   set_gdbarch_frame_align (gdbarch, riscv_frame_align);
 
   /* Functions to access frame data.  */
-  set_gdbarch_unwind_pc (gdbarch, riscv_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, riscv_unwind_sp);
 
   /* Functions handling dummy frames.  */

@@ -1477,14 +1477,6 @@ alpha_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
   return frame_id_build (base, get_frame_pc (this_frame));
 }
 
-static CORE_ADDR
-alpha_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  ULONGEST pc;
-  pc = frame_unwind_register_unsigned (next_frame, ALPHA_PC_REGNUM);
-  return pc;
-}
-
 
 /* Helper routines for alpha*-nat.c files to move register sets to and
    from core files.  The UNIQUE pointer is allowed to be NULL, as most
@@ -1808,9 +1800,6 @@ alpha_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   /* Methods for saving / extracting a dummy frame's ID.  */
   set_gdbarch_dummy_id (gdbarch, alpha_dummy_id);
-
-  /* Return the unwound PC value.  */
-  set_gdbarch_unwind_pc (gdbarch, alpha_unwind_pc);
 
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
   set_gdbarch_skip_trampoline_code (gdbarch, find_solib_trampoline_target);

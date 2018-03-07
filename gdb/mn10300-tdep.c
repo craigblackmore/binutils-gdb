@@ -1150,15 +1150,6 @@ static const struct frame_unwind mn10300_frame_unwind = {
 };
 
 static CORE_ADDR
-mn10300_unwind_pc (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  ULONGEST pc;
-
-  pc = frame_unwind_register_unsigned (this_frame, E_PC_REGNUM);
-  return pc;
-}
-
-static CORE_ADDR
 mn10300_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
   ULONGEST sp;
@@ -1173,7 +1164,6 @@ mn10300_frame_unwind_init (struct gdbarch *gdbarch)
   dwarf2_append_unwinders (gdbarch);
   frame_unwind_append_unwinder (gdbarch, &mn10300_frame_unwind);
   set_gdbarch_dummy_id (gdbarch, mn10300_dummy_id);
-  set_gdbarch_unwind_pc (gdbarch, mn10300_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, mn10300_unwind_sp);
 }
 

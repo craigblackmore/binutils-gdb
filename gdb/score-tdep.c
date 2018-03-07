@@ -70,12 +70,6 @@ score_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
   return frame_unwind_register_unsigned (next_frame, SCORE_SP_REGNUM);
 }
 
-static CORE_ADDR
-score_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, SCORE_PC_REGNUM);
-}
-
 static const char *
 score7_register_name (struct gdbarch *gdbarch, int regnum)
 {
@@ -1480,7 +1474,6 @@ score_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_frame_align (gdbarch, score_frame_align);
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
   set_gdbarch_unwind_sp (gdbarch, score_unwind_sp);
-  set_gdbarch_unwind_pc (gdbarch, score_unwind_pc);
 
   switch (target_mach)
     {

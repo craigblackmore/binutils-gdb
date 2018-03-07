@@ -751,16 +751,6 @@ static const struct frame_unwind rx_exception_unwind = {
   rx_exception_sniffer
 };
 
-/* Implement the "unwind_pc" gdbarch method.  */
-static CORE_ADDR
-rx_unwind_pc (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  ULONGEST pc;
-
-  pc = frame_unwind_register_unsigned (this_frame, RX_PC_REGNUM);
-  return pc;
-}
-
 /* Implement the "unwind_sp" gdbarch method.  */
 static CORE_ADDR
 rx_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
@@ -1110,7 +1100,6 @@ rx_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, rx_breakpoint::bp_from_kind);
   set_gdbarch_skip_prologue (gdbarch, rx_skip_prologue);
 
-  set_gdbarch_unwind_pc (gdbarch, rx_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, rx_unwind_sp);
 
   /* Target builtin data types.  */

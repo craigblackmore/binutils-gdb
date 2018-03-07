@@ -757,16 +757,6 @@ m68hc11_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
   return pc;
 }
 
-static CORE_ADDR
-m68hc11_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  ULONGEST pc;
-
-  pc = frame_unwind_register_unsigned (next_frame,
-				       gdbarch_pc_regnum (gdbarch));
-  return pc;
-}
-
 /* Put here the code to store, into fi->saved_regs, the addresses of
    the saved registers of frame described by FRAME_INFO.  This
    includes special registers such as pc and fp saved in special ways
@@ -1491,7 +1481,6 @@ m68hc11_gdbarch_init (struct gdbarch_info info,
   /* Characters are unsigned.  */
   set_gdbarch_char_signed (gdbarch, 0);
 
-  set_gdbarch_unwind_pc (gdbarch, m68hc11_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, m68hc11_unwind_sp);
 
   /* Set register info.  */
@@ -1527,9 +1516,6 @@ m68hc11_gdbarch_init (struct gdbarch_info info,
      stack address must match the SP value returned by
      PUSH_DUMMY_CALL, and saved by generic_save_dummy_frame_tos.  */
   set_gdbarch_dummy_id (gdbarch, m68hc11_dummy_id);
-
-  /* Return the unwound PC value.  */
-  set_gdbarch_unwind_pc (gdbarch, m68hc11_unwind_pc);
 
   /* Minsymbol frobbing.  */
   set_gdbarch_elf_make_msymbol_special (gdbarch,

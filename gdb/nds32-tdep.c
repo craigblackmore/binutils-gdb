@@ -1398,14 +1398,6 @@ nds32_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
   return frame_id_build (sp, get_frame_pc (this_frame));
 }
 
-/* Implement the "unwind_pc" gdbarch method.  */
-
-static CORE_ADDR
-nds32_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, NDS32_PC_REGNUM);
-}
-
 /* Implement the "unwind_sp" gdbarch method.  */
 
 static CORE_ADDR
@@ -2139,7 +2131,6 @@ nds32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_sp_regnum (gdbarch, NDS32_SP_REGNUM);
   set_gdbarch_pc_regnum (gdbarch, NDS32_PC_REGNUM);
   set_gdbarch_unwind_sp (gdbarch, nds32_unwind_sp);
-  set_gdbarch_unwind_pc (gdbarch, nds32_unwind_pc);
   set_gdbarch_stack_frame_destroyed_p (gdbarch, nds32_stack_frame_destroyed_p);
   set_gdbarch_dwarf2_reg_to_regnum (gdbarch, nds32_dwarf2_reg_to_regnum);
 
