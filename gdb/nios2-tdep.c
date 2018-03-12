@@ -1888,17 +1888,6 @@ nios2_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
   return sp;
 }
 
-/* Implement the unwind_pc gdbarch method.  */
-
-static CORE_ADDR
-nios2_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  gdb_byte buf[4];
-
-  frame_unwind_register (next_frame, NIOS2_PC_REGNUM, buf);
-  return extract_typed_address (buf, builtin_type (gdbarch)->builtin_func_ptr);
-}
-
 /* Implement the unwind_sp gdbarch method.  */
 
 static CORE_ADDR
@@ -2186,7 +2175,7 @@ nios2_get_next_pc (struct regcache *regcache, CORE_ADDR pc)
       /* If ra is in the reglist, we have to use the value saved in the
 	 stack frame rather than the current value.  */
       if (uimm & (1 << NIOS2_RA_REGNUM))
-	pc = nios2_unwind_pc (gdbarch, get_current_frame ());
+	pc = gdbarch_unwind_pc (gdbarch, get_current_frame ());
       else
 	pc = regcache_raw_get_unsigned (regcache, NIOS2_RA_REGNUM);
     }
@@ -2322,7 +2311,6 @@ nios2_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, nios2_sw_breakpoint_from_kind);
 
   set_gdbarch_dummy_id (gdbarch, nios2_dummy_id);
-  set_gdbarch_unwind_pc (gdbarch, nios2_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, nios2_unwind_sp);
 
   /* The dwarf2 unwinder will normally produce the best results if

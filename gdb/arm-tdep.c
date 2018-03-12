@@ -3069,18 +3069,6 @@ arm_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 			 get_frame_pc (this_frame));
 }
 
-/* Given THIS_FRAME, find the previous frame's resume PC (which will
-   be used to construct the previous frame's ID, after looking up the
-   containing function).  */
-
-static CORE_ADDR
-arm_unwind_pc (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR pc;
-  pc = frame_unwind_register_unsigned (this_frame, ARM_PC_REGNUM);
-  return arm_addr_bits_remove (gdbarch, pc);
-}
-
 static CORE_ADDR
 arm_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
@@ -9360,7 +9348,6 @@ arm_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   /* Frame handling.  */
   set_gdbarch_dummy_id (gdbarch, arm_dummy_id);
-  set_gdbarch_unwind_pc (gdbarch, arm_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, arm_unwind_sp);
 
   frame_base_set_default (gdbarch, &arm_normal_base);

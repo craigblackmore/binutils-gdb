@@ -1,5 +1,25 @@
 2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* arm-tdep.c (arm_unwind_pc): Delete.
+	(arm_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* frame-unwind.c (default_unwind_pc): Rewrite to call
+	extract_typed_address and gdbarch_addr_bits_remove.
+	* i386-tdep.c (i386_unwind_pc): Delete.
+	(i386_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* m68k-tdep.c (m68k_unwind_pc): Delete.
+	(m68k_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* nios2-tdep.c (nios2_unwind_pc): Delete.
+	(nios2_get_next_pc): Update to call gdbarch_unwind_pc.
+	(nios2_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* rl78-tdep.c (rl78_unwind_pc): Delete.
+	(rl78_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* s390-tdep.c (s390_unwind_pc): Delete.
+	(s390_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+	* tic6x-tdep.c (tic6x_unwind_pc): Delete.
+	(tic6x_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
+
+2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* aarch64-tdep.c (aarch64_unwind_pc): Deleted.
 	(aarch64_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
 	* alpha-tdep.c (alpha_unwind_pc): Deleted.

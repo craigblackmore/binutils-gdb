@@ -850,15 +850,6 @@ m68k_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR start_pc)
     return start_pc;
   return pc;
 }
-
-static CORE_ADDR
-m68k_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  gdb_byte buf[8];
-
-  frame_unwind_register (next_frame, gdbarch_pc_regnum (gdbarch), buf);
-  return extract_typed_address (buf, builtin_type (gdbarch)->builtin_func_ptr);
-}
 
 /* Normal frames.  */
 
@@ -1246,7 +1237,6 @@ m68k_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   /* Frame unwinder.  */
   set_gdbarch_dummy_id (gdbarch, m68k_dummy_id);
-  set_gdbarch_unwind_pc (gdbarch, m68k_unwind_pc);
 
   /* Hook in the DWARF CFI frame unwinder.  */
   dwarf2_append_unwinders (gdbarch);

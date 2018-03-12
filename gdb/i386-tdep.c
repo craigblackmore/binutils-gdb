@@ -1955,17 +1955,6 @@ i386_skip_main_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
 
   return pc;
 }
-
-/* This function is 64-bit safe.  */
-
-static CORE_ADDR
-i386_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  gdb_byte buf[8];
-
-  frame_unwind_register (next_frame, gdbarch_pc_regnum (gdbarch), buf);
-  return extract_typed_address (buf, builtin_type (gdbarch)->builtin_func_ptr);
-}
 
 
 /* Normal frames.  */
@@ -8500,8 +8489,6 @@ i386_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_print_insn (gdbarch, i386_print_insn);
 
   set_gdbarch_dummy_id (gdbarch, i386_dummy_id);
-
-  set_gdbarch_unwind_pc (gdbarch, i386_unwind_pc);
 
   /* Add the i386 register groups.  */
   i386_add_reggroups (gdbarch);

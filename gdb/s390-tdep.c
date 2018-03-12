@@ -2118,17 +2118,6 @@ s390_stack_frame_destroyed_p (struct gdbarch *gdbarch, CORE_ADDR pc)
   return 0;
 }
 
-/* Implement unwind_pc gdbarch method.  */
-
-static CORE_ADDR
-s390_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
-  ULONGEST pc;
-  pc = frame_unwind_register_unsigned (next_frame, tdep->pc_regnum);
-  return gdbarch_addr_bits_remove (gdbarch, pc);
-}
-
 /* Implement unwind_sp gdbarch method.  */
 
 static CORE_ADDR
@@ -6996,7 +6985,6 @@ s390_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   dwarf2_frame_set_init_reg (gdbarch, s390_dwarf2_frame_init_reg);
   dwarf2_frame_set_adjust_regnum (gdbarch, s390_adjust_frame_regnum);
   dwarf2_append_unwinders (gdbarch);
-  set_gdbarch_unwind_pc (gdbarch, s390_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, s390_unwind_sp);
 
   switch (info.bfd_arch_info->mach)

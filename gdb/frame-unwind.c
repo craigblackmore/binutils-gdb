@@ -198,8 +198,19 @@ default_frame_unwind_stop_reason (struct frame_info *this_frame,
 CORE_ADDR
 default_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
 {
-  int pc_regnum = gdbarch_pc_regnum (gdbarch);
-  return frame_unwind_register_unsigned (next_frame, pc_regnum);
+  struct type *type;
+  int pc_regnum;
+  CORE_ADDR addr;
+  struct value *value;
+
+  pc_regnum = gdbarch_pc_regnum (gdbarch);
+  value = frame_unwind_register_value (next_frame, pc_regnum);
+  type = builtin_type (gdbarch)->builtin_func_ptr;
+  addr = extract_typed_address (value_contents_all (value), type);
+  addr = gdbarch_addr_bits_remove (gdbarch, addr);
+
+  release_value (value);
+  return addr;
 }
 
 /* Helper functions for value-based register unwinding.  These return
