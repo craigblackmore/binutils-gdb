@@ -385,6 +385,22 @@ const struct frame_unwind dummy_frame_unwind =
   dummy_frame_sniffer,
 };
 
+/* Default implementation of gdbarch_dummy_id.  Generate frame_id for
+   THIS_FRAME assuming that it is a dummy frame.  A dummy frame is created
+   before an inferior call, the frame_id returned here must match the base
+   address returned by gdbarch_push_dummy_call and the frame's pc must
+   match the dummy frames breakpoint address.  */
+
+struct frame_id
+default_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
+{
+  CORE_ADDR sp, pc;
+
+  sp = get_frame_sp (this_frame);
+  pc = get_frame_pc (this_frame);
+  return frame_id_build (sp, pc);
+}
+
 static void
 fprint_dummy_frames (struct ui_file *file)
 {

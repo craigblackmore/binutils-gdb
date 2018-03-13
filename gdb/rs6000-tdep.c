@@ -3098,14 +3098,6 @@ find_variant_by_arch (enum bfd_architecture arch, unsigned long mach)
 }
 
 
-static struct frame_id
-rs6000_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_id_build (get_frame_register_unsigned
-			  (this_frame, gdbarch_sp_regnum (gdbarch)),
-			 get_frame_pc (this_frame));
-}
-
 struct rs6000_frame_cache
 {
   CORE_ADDR base;
@@ -6420,7 +6412,6 @@ rs6000_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     case GDB_OSABI_UNKNOWN:
       frame_unwind_append_unwinder (gdbarch, &rs6000_epilogue_frame_unwind);
       frame_unwind_append_unwinder (gdbarch, &rs6000_frame_unwind);
-      set_gdbarch_dummy_id (gdbarch, rs6000_dummy_id);
       frame_base_append_sniffer (gdbarch, rs6000_frame_base_sniffer);
       break;
     default:
@@ -6428,7 +6419,6 @@ rs6000_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
       frame_unwind_append_unwinder (gdbarch, &rs6000_epilogue_frame_unwind);
       frame_unwind_append_unwinder (gdbarch, &rs6000_frame_unwind);
-      set_gdbarch_dummy_id (gdbarch, rs6000_dummy_id);
       frame_base_append_sniffer (gdbarch, rs6000_frame_base_sniffer);
     }
 

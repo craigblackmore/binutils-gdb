@@ -621,14 +621,6 @@ static const struct frame_base moxie_frame_base = {
   moxie_frame_base_address
 };
 
-static struct frame_id
-moxie_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp = get_frame_register_unsigned (this_frame, MOXIE_SP_REGNUM);
-
-  return frame_id_build (sp, get_frame_pc (this_frame));
-}
-
 /* Parse the current instruction and record the values of the registers and
    memory that will be changed in current instruction to "record_arch_list".
    Return -1 if something wrong.  */
@@ -1100,11 +1092,6 @@ moxie_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_frame_align (gdbarch, moxie_frame_align);
 
   frame_base_set_default (gdbarch, &moxie_frame_base);
-
-  /* Methods for saving / extracting a dummy frame's ID.  The ID's
-     stack address must match the SP value returned by
-     PUSH_DUMMY_CALL, and saved by generic_save_dummy_frame_tos.  */
-  set_gdbarch_dummy_id (gdbarch, moxie_dummy_id);
 
   /* Hook in ABI-specific overrides, if they have been registered.  */
   gdbarch_init_osabi (info, gdbarch);

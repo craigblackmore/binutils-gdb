@@ -864,18 +864,6 @@ static const struct frame_base m32r_frame_base = {
   m32r_frame_base_address
 };
 
-/* Assuming THIS_FRAME is a dummy, return the frame ID of that dummy
-   frame.  The frame ID's base needs to match the TOS value saved by
-   save_dummy_frame_tos(), and the PC match the dummy frame's breakpoint.  */
-
-static struct frame_id
-m32r_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp = get_frame_register_unsigned (this_frame, M32R_SP_REGNUM);
-  return frame_id_build (sp, get_frame_pc (this_frame));
-}
-
-
 static gdbarch_init_ftype m32r_gdbarch_init;
 
 static struct gdbarch *
@@ -919,11 +907,6 @@ m32r_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_frame_align (gdbarch, m32r_frame_align);
 
   frame_base_set_default (gdbarch, &m32r_frame_base);
-
-  /* Methods for saving / extracting a dummy frame's ID.  The ID's
-     stack address must match the SP value returned by
-     PUSH_DUMMY_CALL, and saved by generic_save_dummy_frame_tos.  */
-  set_gdbarch_dummy_id (gdbarch, m32r_dummy_id);
 
   /* Hook in ABI-specific overrides, if they have been registered.  */
   gdbarch_init_osabi (info, gdbarch);

@@ -49,6 +49,7 @@
 #include "objfiles.h"
 #include "auxv.h"
 #include "frame-unwind.h"
+#include "dummy-frame.h"
 
 /* Static function declarations */
 
@@ -408,6 +409,7 @@ gdbarch_alloc (const struct gdbarch_info *info,
   gdbarch->ecoff_reg_to_regnum = no_op_reg_to_regnum;
   gdbarch->sdb_reg_to_regnum = no_op_reg_to_regnum;
   gdbarch->dwarf2_reg_to_regnum = no_op_reg_to_regnum;
+  gdbarch->dummy_id = default_dummy_id;
   gdbarch->deprecated_fp_regnum = -1;
   gdbarch->call_dummy_location = AT_ENTRY_POINT;
   gdbarch->code_of_frame_writable = default_code_of_frame_writable;
@@ -571,7 +573,7 @@ verify_gdbarch (struct gdbarch *gdbarch)
   if (gdbarch->register_name == 0)
     log.puts ("\n\tregister_name");
   /* Skip verify of register_type, has predicate.  */
-  /* Skip verify of dummy_id, has predicate.  */
+  /* Skip verify of dummy_id, invalid_p == 0 */
   /* Skip verify of deprecated_fp_regnum, invalid_p == 0 */
   /* Skip verify of push_dummy_call, has predicate.  */
   /* Skip verify of call_dummy_location, invalid_p == 0 */
@@ -951,9 +953,6 @@ gdbarch_dump (struct gdbarch *gdbarch, struct ui_file *file)
   fprintf_unfiltered (file,
                       "gdbarch_dump: dtrace_probe_is_enabled = <%s>\n",
                       host_address_to_string (gdbarch->dtrace_probe_is_enabled));
-  fprintf_unfiltered (file,
-                      "gdbarch_dump: gdbarch_dummy_id_p() = %d\n",
-                      gdbarch_dummy_id_p (gdbarch));
   fprintf_unfiltered (file,
                       "gdbarch_dump: dummy_id = <%s>\n",
                       host_address_to_string (gdbarch->dummy_id));
@@ -2299,13 +2298,6 @@ set_gdbarch_register_type (struct gdbarch *gdbarch,
                            gdbarch_register_type_ftype register_type)
 {
   gdbarch->register_type = register_type;
-}
-
-int
-gdbarch_dummy_id_p (struct gdbarch *gdbarch)
-{
-  gdb_assert (gdbarch != NULL);
-  return gdbarch->dummy_id != NULL;
 }
 
 struct frame_id

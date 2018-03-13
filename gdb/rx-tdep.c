@@ -761,15 +761,6 @@ rx_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
   return sp;
 }
 
-/* Implement the "dummy_id" gdbarch method.  */
-static struct frame_id
-rx_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return
-    frame_id_build (get_frame_register_unsigned (this_frame, RX_SP_REGNUM),
-		    get_frame_pc (this_frame));
-}
-
 /* Implement the "push_dummy_call" gdbarch method.  */
 static CORE_ADDR
 rx_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
@@ -1137,7 +1128,6 @@ rx_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /* Methods for saving / extracting a dummy frame's ID.
      The ID's stack address must match the SP value returned by
      PUSH_DUMMY_CALL, and saved by generic_save_dummy_frame_tos.  */
-  set_gdbarch_dummy_id (gdbarch, rx_dummy_id);
   set_gdbarch_push_dummy_call (gdbarch, rx_push_dummy_call);
   set_gdbarch_return_value (gdbarch, rx_return_value);
 

@@ -2330,15 +2330,6 @@ riscv_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
   return frame_unwind_register_unsigned (next_frame, RISCV_SP_REGNUM);
 }
 
-/* Implement the dummy_id gdbarch method.  */
-
-static struct frame_id
-riscv_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_id_build (get_frame_register_signed (this_frame, RISCV_SP_REGNUM),
-			 get_frame_pc (this_frame));
-}
-
 /* Generate, or return the cached frame cache for the RiscV frame
    unwinder.  */
 
@@ -2542,7 +2533,6 @@ riscv_gdbarch_init (struct gdbarch_info info,
   set_gdbarch_call_dummy_location (gdbarch, ON_STACK);
   set_gdbarch_push_dummy_code (gdbarch, riscv_push_dummy_code);
   set_gdbarch_push_dummy_call (gdbarch, riscv_push_dummy_call);
-  set_gdbarch_dummy_id (gdbarch, riscv_dummy_id);
 
   /* Frame unwinders.  Use DWARF debug info if available, otherwise use our own
      unwinder.  */

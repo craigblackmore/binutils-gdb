@@ -756,16 +756,6 @@ static const struct frame_base bfin_frame_base =
   bfin_frame_args_address
 };
 
-static struct frame_id
-bfin_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp;
-
-  sp = get_frame_register_unsigned (this_frame, BFIN_SP_REGNUM);
-
-  return frame_id_build (sp, get_frame_pc (this_frame));
-}
-
 static CORE_ADDR
 bfin_frame_align (struct gdbarch *gdbarch, CORE_ADDR address)
 {
@@ -820,7 +810,6 @@ bfin_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_dwarf2_reg_to_regnum (gdbarch, bfin_reg_to_regnum);
   set_gdbarch_register_name (gdbarch, bfin_register_name);
   set_gdbarch_register_type (gdbarch, bfin_register_type);
-  set_gdbarch_dummy_id (gdbarch, bfin_dummy_id);
   set_gdbarch_push_dummy_call (gdbarch, bfin_push_dummy_call);
   set_gdbarch_believe_pcc_promotion (gdbarch, 1);
   set_gdbarch_return_value (gdbarch, bfin_return_value);

@@ -472,14 +472,6 @@ score_return_value (struct gdbarch *gdbarch, struct value *function,
     }
 }
 
-static struct frame_id
-score_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_id_build (get_frame_register_unsigned (this_frame,
-						      SCORE_SP_REGNUM),
-			 get_frame_pc (this_frame));
-}
-
 static int
 score_type_needs_double_align (struct type *type)
 {
@@ -1511,7 +1503,6 @@ score_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /* Dummy frame hooks.  */
   set_gdbarch_return_value (gdbarch, score_return_value);
   set_gdbarch_call_dummy_location (gdbarch, AT_ENTRY_POINT);
-  set_gdbarch_dummy_id (gdbarch, score_dummy_id);
   set_gdbarch_push_dummy_call (gdbarch, score_push_dummy_call);
 
   /* Normal frame hooks.  */

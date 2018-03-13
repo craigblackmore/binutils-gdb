@@ -1098,15 +1098,6 @@ mn10300_frame_base (struct frame_info *this_frame, void **this_prologue_cache)
     }
 }
 
-/* Here is a dummy implementation.  */
-static struct frame_id
-mn10300_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp = get_frame_register_unsigned (this_frame, E_SP_REGNUM);
-  CORE_ADDR pc = get_frame_register_unsigned (this_frame, E_PC_REGNUM);
-  return frame_id_build (sp, pc);
-}
-
 static void
 mn10300_frame_this_id (struct frame_info *this_frame,
 		       void **this_prologue_cache,
@@ -1163,7 +1154,6 @@ mn10300_frame_unwind_init (struct gdbarch *gdbarch)
 {
   dwarf2_append_unwinders (gdbarch);
   frame_unwind_append_unwinder (gdbarch, &mn10300_frame_unwind);
-  set_gdbarch_dummy_id (gdbarch, mn10300_dummy_id);
   set_gdbarch_unwind_sp (gdbarch, mn10300_unwind_sp);
 }
 

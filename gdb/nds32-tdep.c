@@ -1388,16 +1388,6 @@ static const struct frame_unwind nds32_epilogue_frame_unwind =
   nds32_epilogue_frame_sniffer
 };
 
-/* Implement the "dummy_id" gdbarch method.  */
-
-static struct frame_id
-nds32_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp = get_frame_register_unsigned (this_frame, NDS32_SP_REGNUM);
-
-  return frame_id_build (sp, get_frame_pc (this_frame));
-}
-
 /* Implement the "unwind_sp" gdbarch method.  */
 
 static CORE_ADDR
@@ -2136,7 +2126,6 @@ nds32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_push_dummy_call (gdbarch, nds32_push_dummy_call);
   set_gdbarch_return_value (gdbarch, nds32_return_value);
-  set_gdbarch_dummy_id (gdbarch, nds32_dummy_id);
 
   set_gdbarch_skip_prologue (gdbarch, nds32_skip_prologue);
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);

@@ -801,16 +801,6 @@ tic6x_return_value (struct gdbarch *gdbarch, struct value *function,
   return RETURN_VALUE_REGISTER_CONVENTION;
 }
 
-/* This is the implementation of gdbarch method dummy_id.  */
-
-static struct frame_id
-tic6x_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_id_build
-    (get_frame_register_unsigned (this_frame, TIC6X_SP_REGNUM),
-     get_frame_pc (this_frame));
-}
-
 /* Get the alignment requirement of TYPE.  */
 
 static int
@@ -1291,8 +1281,6 @@ tic6x_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_frame_align (gdbarch, tic6x_frame_align);
 
   set_gdbarch_return_value (gdbarch, tic6x_return_value);
-
-  set_gdbarch_dummy_id (gdbarch, tic6x_dummy_id);
 
   /* Enable inferior call support.  */
   set_gdbarch_push_dummy_call (gdbarch, tic6x_push_dummy_call);

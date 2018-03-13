@@ -643,18 +643,6 @@ msp430_frame_align (struct gdbarch *gdbarch, CORE_ADDR sp)
 }
 
 
-/* Implement the "dummy_id" gdbarch method.  */
-
-static struct frame_id
-msp430_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return
-    frame_id_build (get_frame_register_unsigned
-		    (this_frame, MSP430_SP_REGNUM),
-		    get_frame_pc (this_frame));
-}
-
-
 /* Implement the "push_dummy_call" gdbarch method.  */
 
 static CORE_ADDR
@@ -993,7 +981,6 @@ msp430_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   frame_unwind_append_unwinder (gdbarch, &msp430_unwind);
 
   /* Dummy frames, return values.  */
-  set_gdbarch_dummy_id (gdbarch, msp430_dummy_id);
   set_gdbarch_push_dummy_call (gdbarch, msp430_push_dummy_call);
   set_gdbarch_return_value (gdbarch, msp430_return_value);
 

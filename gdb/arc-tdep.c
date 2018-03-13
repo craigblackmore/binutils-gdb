@@ -509,19 +509,6 @@ arc_virtual_frame_pointer (struct gdbarch *gdbarch, CORE_ADDR pc,
   *offset_ptr = 0;
 }
 
-/* Implement the "dummy_id" gdbarch method.
-
-   Tear down a dummy frame created by arc_push_dummy_call ().  This data has
-   to be constructed manually from the data in our hand.  The stack pointer
-   and program counter can be obtained from the frame info.  */
-
-static struct frame_id
-arc_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_id_build (get_frame_sp (this_frame),
-			 get_frame_pc (this_frame));
-}
-
 /* Implement the "push_dummy_call" gdbarch method.
 
    Stack Frame Layout
@@ -2014,7 +2001,6 @@ arc_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_ps_regnum (gdbarch, ARC_STATUS32_REGNUM);
   set_gdbarch_fp0_regnum (gdbarch, -1);	/* No FPU registers.  */
 
-  set_gdbarch_dummy_id (gdbarch, arc_dummy_id);
   set_gdbarch_push_dummy_call (gdbarch, arc_push_dummy_call);
   set_gdbarch_push_dummy_code (gdbarch, arc_push_dummy_code);
 

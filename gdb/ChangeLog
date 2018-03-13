@@ -1,5 +1,72 @@
 2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* aarch64-tdep.c (aarch64_dummy_id): Delete.
+	(aarch64_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* alpha-tdep.c (alpha_dummy_id): Delete.
+	(alpha_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* arc-tdep.c (arc_dummy_id): Delete.
+	(arc_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* arm-tdep.c (arm_dummy_id): Delete.
+	(arm_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* bfin-tdep.c (bfin_dummy_id): Delete.
+	(bfin_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* cris-tdep.c (cris_dummy_id): Delete.
+	(cris_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* dummy-frame.c (default_dummy_id): Defined new function.
+	* dummy-frame.h (default_dummy_id): Declare new function.
+	* frv-tdep.c (frv_dummy_id): Delete.
+	(frv_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* ft32-tdep.c (ft32_dummy_id): Delete.
+	(ft32_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* gdbarch.c: Regenerate.
+	* gdbarch.h: Regenerate.
+	* gdbarch.sh: Remove predicate function, and supply default for
+	dummy_id method.  Add 'dummy-frame.h' header.
+	* h8300-tdep.c (h8300_dummy_id): Delete.
+	(h8300_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* hppa-tdep.c (hppa_dummy_id): Delete.
+	(hppa_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* iq2000-tdep.c (iq2000_dummy_id): Delete.
+	(iq2000_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* lm32-tdep.c (lm32_dummy_id): Delete.
+	(lm32_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* m32r-tdep.c (m32r_dummy_id): Delete.
+	(m32r_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* mep-tdep.c (mep_dummy_id): Delete.
+	(mep_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* mn10300-tdep.c (mn10300_dummy_id): Delete.
+	(mn10300_frame_unwind_init): Don't call set_gdbarch_dummy_id.
+	* moxie-tdep.c (moxie_dummy_id): Delete.
+	(moxie_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* msp430-tdep.c (msp430_dummy_id): Delete.
+	(msp430_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* nds32-tdep.c (nds32_dummy_id): Delete.
+	(nds32_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* nios2-tdep.c (nios2_dummy_id): Delete.
+	(nios2_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* or1k-tdep.c (or1k_dummy_id): Delete.
+	(or1k_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* riscv-tdep.c (riscv_dummy_id): Delete.
+	(riscv_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* rs6000-tdep.c (rs6000_dummy_id): Delete.
+	(rs6000_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* rx-tdep.c (rx_dummy_id): Delete.
+	(rx_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* score-tdep.c (score_dummy_id): Delete.
+	(score_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* sh-tdep.c (sh_dummy_id): Delete.
+	(sh_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* tic6x-tdep.c (tic6x_dummy_id): Delete.
+	(tic6x_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* tilegx-tdep.c (tilegx_unwind_dummy_id): Delete.
+	(tilegx_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* v850-tdep.c (v850_dummy_id): Delete.
+	(v850_gdbarch_init): Don't call set_gdbarch_dummy_id.
+	* gdb/xstormy16-tdep.c (xstormy16_dummy_id): Delete.
+	(xstormy16_gdbarch_init): Don't call set_gdbarch_dummy_id.
+
+2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* arm-tdep.c (arm_unwind_pc): Delete.
 	(arm_gdbarch_init): Delete use of set_gdbarch_unwind_pc.
 	* frame-unwind.c (default_unwind_pc): Rewrite to call

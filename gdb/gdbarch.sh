@@ -480,7 +480,7 @@ m;const char *;register_name;int regnr;regnr;;0
 # use "register_type".
 M;struct type *;register_type;int reg_nr;reg_nr
 
-M;struct frame_id;dummy_id;struct frame_info *this_frame;this_frame
+m;struct frame_id;dummy_id;struct frame_info *this_frame;this_frame;;default_dummy_id;;0
 # Implement DUMMY_ID and PUSH_DUMMY_CALL, then delete
 # deprecated_fp_regnum.
 v;int;deprecated_fp_regnum;;;-1;-1;;0
@@ -1658,6 +1658,7 @@ cat <<EOF
 #include "objfiles.h"
 #include "auxv.h"
 #include "frame-unwind.h"
+#include "dummy-frame.h"
 
 /* Static function declarations */
 

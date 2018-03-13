@@ -764,18 +764,6 @@ cris_frame_prev_register (struct frame_info *this_frame,
   return trad_frame_get_prev_register (this_frame, info->saved_regs, regnum);
 }
 
-/* Assuming THIS_FRAME is a dummy, return the frame ID of that dummy
-   frame.  The frame ID's base needs to match the TOS value saved by
-   save_dummy_frame_tos(), and the PC match the dummy frame's breakpoint.  */
-
-static struct frame_id
-cris_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp;
-  sp = get_frame_register_unsigned (this_frame, gdbarch_sp_regnum (gdbarch));
-  return frame_id_build (sp, get_frame_pc (this_frame));
-}
-
 static CORE_ADDR
 cris_frame_align (struct gdbarch *gdbarch, CORE_ADDR sp)
 {
@@ -4085,7 +4073,6 @@ cris_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, cris_sw_breakpoint_from_kind);
   
   set_gdbarch_unwind_sp (gdbarch, cris_unwind_sp);
-  set_gdbarch_dummy_id (gdbarch, cris_dummy_id);
 
   if (tdep->cris_dwarf2_cfi == 1)
     {

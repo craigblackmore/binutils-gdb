@@ -559,14 +559,6 @@ static const struct frame_base ft32_frame_base =
   ft32_frame_base_address
 };
 
-static struct frame_id
-ft32_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  CORE_ADDR sp = get_frame_register_unsigned (this_frame, FT32_SP_REGNUM);
-
-  return frame_id_build (sp, get_frame_pc (this_frame));
-}
-
 /* Allocate and initialize the ft32 gdbarch object.  */
 
 static struct gdbarch *
@@ -613,11 +605,6 @@ ft32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_frame_align (gdbarch, ft32_frame_align);
 
   frame_base_set_default (gdbarch, &ft32_frame_base);
-
-  /* Methods for saving / extracting a dummy frame's ID.  The ID's
-     stack address must match the SP value returned by
-     PUSH_DUMMY_CALL, and saved by generic_save_dummy_frame_tos.  */
-  set_gdbarch_dummy_id (gdbarch, ft32_dummy_id);
 
   /* Hook in ABI-specific overrides, if they have been registered.  */
   gdbarch_init_osabi (info, gdbarch);
