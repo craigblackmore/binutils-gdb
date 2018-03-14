@@ -650,13 +650,6 @@ m32r_frame_unwind_cache (struct frame_info *this_frame,
 }
 
 static CORE_ADDR
-m32r_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, M32R_SP_REGNUM);
-}
-
-
-static CORE_ADDR
 m32r_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 		      struct regcache *regcache, CORE_ADDR bp_addr, int nargs,
 		      struct value **args, CORE_ADDR sp, int struct_return,
@@ -883,8 +876,6 @@ m32r_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_wchar_bit (gdbarch, 16);
   set_gdbarch_wchar_signed (gdbarch, 0);
-
-  set_gdbarch_unwind_sp (gdbarch, m32r_unwind_sp);
 
   set_gdbarch_num_regs (gdbarch, M32R_NUM_REGS);
   set_gdbarch_pc_regnum (gdbarch, M32R_PC_REGNUM);

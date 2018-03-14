@@ -967,14 +967,6 @@ static const struct frame_base m68hc11_frame_base = {
   m68hc11_frame_args_address
 };
 
-static CORE_ADDR
-m68hc11_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  ULONGEST sp;
-  sp = frame_unwind_register_unsigned (next_frame, HARD_SP_REGNUM);
-  return sp;
-}
-
 /* Assuming THIS_FRAME is a dummy, return the frame ID of that dummy
    frame.  The frame ID's base needs to match the TOS value saved by
    save_dummy_frame_tos(), and the PC match the dummy frame's breakpoint.  */
@@ -1480,8 +1472,6 @@ m68hc11_gdbarch_init (struct gdbarch_info info,
 
   /* Characters are unsigned.  */
   set_gdbarch_char_signed (gdbarch, 0);
-
-  set_gdbarch_unwind_sp (gdbarch, m68hc11_unwind_sp);
 
   /* Set register info.  */
   set_gdbarch_fp0_regnum (gdbarch, -1);

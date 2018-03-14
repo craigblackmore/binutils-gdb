@@ -651,9 +651,6 @@ static CORE_ADDR crisv32_scan_prologue (CORE_ADDR pc,
 					struct frame_info *this_frame,
 					struct cris_unwind_cache *info);
 
-static CORE_ADDR cris_unwind_sp (struct gdbarch *gdbarch, 
-				 struct frame_info *next_frame);
-
 /* When arguments must be pushed onto the stack, they go on in reverse
    order.  The below implements a FILO (stack) to do this.
    Copied from d10v-tdep.c.  */
@@ -1356,15 +1353,6 @@ cris_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
     pc_after_prologue = cris_scan_prologue (pc, NULL, NULL);
 
   return pc_after_prologue;
-}
-
-static CORE_ADDR
-cris_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  ULONGEST sp;
-  sp = frame_unwind_register_unsigned (next_frame,
-				       gdbarch_sp_regnum (gdbarch));
-  return sp;
 }
 
 /* Implement the breakpoint_kind_from_pc gdbarch method.  */
@@ -4072,8 +4060,6 @@ cris_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_breakpoint_kind_from_pc (gdbarch, cris_breakpoint_kind_from_pc);
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, cris_sw_breakpoint_from_kind);
   
-  set_gdbarch_unwind_sp (gdbarch, cris_unwind_sp);
-
   if (tdep->cris_dwarf2_cfi == 1)
     {
       /* Hook in the Dwarf-2 frame sniffer.  */

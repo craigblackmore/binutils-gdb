@@ -1388,14 +1388,6 @@ static const struct frame_unwind nds32_epilogue_frame_unwind =
   nds32_epilogue_frame_sniffer
 };
 
-/* Implement the "unwind_sp" gdbarch method.  */
-
-static CORE_ADDR
-nds32_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, NDS32_SP_REGNUM);
-}
-
 /* Floating type and struct type that has only one floating type member
    can pass value using FPU registers (when FPU ABI is used).  */
 
@@ -2120,7 +2112,6 @@ nds32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_sp_regnum (gdbarch, NDS32_SP_REGNUM);
   set_gdbarch_pc_regnum (gdbarch, NDS32_PC_REGNUM);
-  set_gdbarch_unwind_sp (gdbarch, nds32_unwind_sp);
   set_gdbarch_stack_frame_destroyed_p (gdbarch, nds32_stack_frame_destroyed_p);
   set_gdbarch_dwarf2_reg_to_regnum (gdbarch, nds32_dwarf2_reg_to_regnum);
 

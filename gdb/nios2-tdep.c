@@ -1878,14 +1878,6 @@ nios2_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
   return sp;
 }
 
-/* Implement the unwind_sp gdbarch method.  */
-
-static CORE_ADDR
-nios2_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_unwind_register_unsigned (this_frame, NIOS2_SP_REGNUM);
-}
-
 /* Use prologue analysis to fill in the register cache
    *THIS_PROLOGUE_CACHE for THIS_FRAME.  This function initializes
    *THIS_PROLOGUE_CACHE first.  */
@@ -2299,8 +2291,6 @@ nios2_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_stack_frame_destroyed_p (gdbarch, nios2_stack_frame_destroyed_p);
   set_gdbarch_breakpoint_kind_from_pc (gdbarch, nios2_breakpoint_kind_from_pc);
   set_gdbarch_sw_breakpoint_from_kind (gdbarch, nios2_sw_breakpoint_from_kind);
-
-  set_gdbarch_unwind_sp (gdbarch, nios2_unwind_sp);
 
   /* The dwarf2 unwinder will normally produce the best results if
      the debug information is available, so register it first.  */

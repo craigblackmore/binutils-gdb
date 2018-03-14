@@ -92,12 +92,6 @@ static int is_h8300_normal_mode (struct gdbarch *gdbarch);
 		  && !is_h8300_normal_mode (gdbarch)) \
 		 ? h8300h_reg_size : h8300_reg_size)
 
-static CORE_ADDR
-h8300_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, E_SP_REGNUM);
-}
-
 /* Normal frames.  */
 
 /* Allocate and initialize a frame cache.  */
@@ -1340,7 +1334,6 @@ h8300_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_skip_prologue (gdbarch, h8300_skip_prologue);
 
   /* Frame unwinder.  */
-  set_gdbarch_unwind_sp (gdbarch, h8300_unwind_sp);
   frame_base_set_default (gdbarch, &h8300_frame_base);
 
   /* 

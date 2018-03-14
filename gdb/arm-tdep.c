@@ -3055,12 +3055,6 @@ struct frame_base arm_normal_base = {
   arm_normal_frame_base
 };
 
-static CORE_ADDR
-arm_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_unwind_register_unsigned (this_frame, ARM_SP_REGNUM);
-}
-
 static struct value *
 arm_dwarf2_prev_register (struct frame_info *this_frame, void **this_cache,
 			  int regnum)
@@ -9331,9 +9325,6 @@ arm_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     set_gdbarch_code_of_frame_writable (gdbarch, arm_code_of_frame_writable);
 
   set_gdbarch_write_pc (gdbarch, arm_write_pc);
-
-  /* Frame handling.  */
-  set_gdbarch_unwind_sp (gdbarch, arm_unwind_sp);
 
   frame_base_set_default (gdbarch, &arm_normal_base);
 

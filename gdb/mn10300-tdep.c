@@ -1140,21 +1140,11 @@ static const struct frame_unwind mn10300_frame_unwind = {
   default_frame_sniffer
 };
 
-static CORE_ADDR
-mn10300_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  ULONGEST sp;
-
-  sp = frame_unwind_register_unsigned (this_frame, E_SP_REGNUM);
-  return sp;
-}
-
 static void
 mn10300_frame_unwind_init (struct gdbarch *gdbarch)
 {
   dwarf2_append_unwinders (gdbarch);
   frame_unwind_append_unwinder (gdbarch, &mn10300_frame_unwind);
-  set_gdbarch_unwind_sp (gdbarch, mn10300_unwind_sp);
 }
 
 /* Function: push_dummy_call
@@ -1288,7 +1278,7 @@ mn10300_push_dummy_call (struct gdbarch *gdbarch,
   {
     CORE_ADDR func_addr = find_function_addr (target_func, NULL);
     CORE_ADDR unwound_sp 
-      = mn10300_unwind_sp (gdbarch, create_new_frame (sp, func_addr));
+      = gdbarch_unwind_sp (gdbarch, create_new_frame (sp, func_addr));
     if (sp != unwound_sp)
       regcache_cooked_write_unsigned (regcache, E_SP_REGNUM,
                                       sp - (unwound_sp - sp));

@@ -366,15 +366,6 @@ tic6x_dwarf2_frame_init_reg (struct gdbarch *gdbarch, int regnum,
     reg->how = DWARF2_FRAME_REG_UNDEFINED;
 }
 
-/* This is the implementation of gdbarch method unwind_sp.  */
-
-static CORE_ADDR
-tic6x_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_unwind_register_unsigned (this_frame, TIC6X_SP_REGNUM);
-}
-
-
 /* Frame base handling.  */
 
 static struct tic6x_unwind_cache*
@@ -1262,8 +1253,6 @@ tic6x_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 				       tic6x_breakpoint_kind_from_pc);
   set_gdbarch_sw_breakpoint_from_kind (gdbarch,
 				       tic6x_sw_breakpoint_from_kind);
-
-  set_gdbarch_unwind_sp (gdbarch, tic6x_unwind_sp);
 
   /* Unwinding.  */
   dwarf2_append_unwinders (gdbarch);

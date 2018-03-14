@@ -1432,12 +1432,6 @@ static const struct frame_base frv_frame_base = {
   frv_frame_base_address
 };
 
-static CORE_ADDR
-frv_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, sp_regnum);
-}
-
 static struct gdbarch *
 frv_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 {
@@ -1521,7 +1515,6 @@ frv_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_return_value (gdbarch, frv_return_value);
 
   /* Frame stuff.  */
-  set_gdbarch_unwind_sp (gdbarch, frv_unwind_sp);
   set_gdbarch_frame_align (gdbarch, frv_frame_align);
   frame_base_set_default (gdbarch, &frv_frame_base);
   /* We set the sniffer lower down after the OSABI hooks have been

@@ -1000,14 +1000,6 @@ struct frame_base aarch64_normal_base =
   aarch64_normal_frame_base
 };
 
-/* Implement the "unwind_sp" gdbarch method.  */
-
-static CORE_ADDR
-aarch64_unwind_sp (struct gdbarch *gdbarch, struct frame_info *this_frame)
-{
-  return frame_unwind_register_unsigned (this_frame, AARCH64_SP_REGNUM);
-}
-
 /* Return the value of the REGNUM register in the previous frame of
    *THIS_FRAME.  */
 
@@ -2924,9 +2916,6 @@ aarch64_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_push_dummy_call (gdbarch, aarch64_push_dummy_call);
   set_gdbarch_frame_align (gdbarch, aarch64_frame_align);
-
-  /* Frame handling.  */
-  set_gdbarch_unwind_sp (gdbarch, aarch64_unwind_sp);
 
   /* Advance PC across function entry code.  */
   set_gdbarch_skip_prologue (gdbarch, aarch64_skip_prologue);

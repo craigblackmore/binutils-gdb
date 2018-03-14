@@ -383,14 +383,6 @@ ft32_address_class_name_to_type_flags (struct gdbarch *gdbarch,
     return 0;
 }
 
-/* Implement the "unwind_sp" gdbarch method.  */
-
-static CORE_ADDR
-ft32_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, FT32_SP_REGNUM);
-}
-
 /* Given a return value in `regbuf' with a type `valtype',
    extract and copy its value into `valbuf'.  */
 
@@ -585,8 +577,6 @@ ft32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   tdep->pc_type = arch_pointer_type (gdbarch, 4 * TARGET_CHAR_BIT, NULL,
 				     func_void_type);
   TYPE_INSTANCE_FLAGS (tdep->pc_type) |= TYPE_INSTANCE_FLAG_ADDRESS_CLASS_1;
-
-  set_gdbarch_unwind_sp (gdbarch, ft32_unwind_sp);
 
   set_gdbarch_num_regs (gdbarch, FT32_NUM_REGS);
   set_gdbarch_sp_regnum (gdbarch, FT32_SP_REGNUM);

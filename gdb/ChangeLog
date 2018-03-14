@@ -1,5 +1,67 @@
 2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* aarch64-tdep.c (aarch64_unwind_sp): Delete.
+	(aarch64_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* arm-tdep.c (arm_unwind_sp): Delete.
+	(arm_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* cris-tdep.c (cris_unwind_sp): Delete.
+	(cris_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* frame-unwind.c (default_unwind_sp): Define new function.
+	* frame-unwind.h (default_unwind_sp): Declare new function.
+	* frame.c (get_frame_sp): Assume gdbarch_unwind_sp is always
+	available.
+	* frv-tdep.c (frv_unwind_sp): Delete.
+	(frv_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* ft32-tdep.c (ft32_unwind_sp): Delete.
+	(ft32_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* gdbarch.c: Regenerate.
+	* gdbarch.h: Regenerate.
+	* gdbarch.sh: Update 'unwind_sp', remove predicate, and supply a
+	default method name.
+	* h8300-tdep.c (h8300_unwind_sp): Delete.
+	(h8300_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* iq2000-tdep.c (iq2000_unwind_sp): Delete.
+	(iq2000_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* lm32-tdep.c (lm32_unwind_sp): Delete.
+	(lm32_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* m32r-tdep.c (m32r_unwind_sp): Delete.
+	(m32r_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* m68hc11-tdep.c (m68hc11_unwind_sp): Delete.
+	(m68hc11_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* mep-tdep.c (mep_unwind_sp): Delete.
+	(mep_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* mn10300-tdep.c (mn10300_unwind_sp): Delete.
+	(mn10300_frame_unwind_init): Don't call set_gdbarch_unwind_sp.
+	(mn10300_push_dummy_call): Call gdbarch_unwind_sp instead.
+	* moxie-tdep.c (moxie_unwind_sp): Delete.
+	(moxie_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* msp430-tdep.c (msp430_unwind_sp): Delete.
+	(msp430_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* nds32-tdep.c (nds32_unwind_sp): Delete.
+	(nds32_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* nios2-tdep.c (nios2_unwind_sp): Delete.
+	(nios2_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* riscv-tdep.c (riscv_unwind_sp): Delete.
+	(riscv_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* rl78-tdep.c (rl78_unwind_sp): Delete.
+	(rl78_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* rx-tdep.c (rx_unwind_sp): Delete.
+	(rx_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* score-tdep.c (score_unwind_sp): Delete.
+	(score_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* sh-tdep.c (sh_unwind_sp): Delete.
+	(sh_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* tic6x-tdep.c (tic6x_unwind_sp): Delete.
+	(tic6x_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* tilegx-tdep.c (tilegx_unwind_sp): Delete.
+	(tilegx_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* v850-tdep.c (v850_unwind_sp): Delete.
+	(v850_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+	* xstormy16-tdep.c (xstormy16_unwind_sp): Delete.
+	(xstormy16_gdbarch_init): Don't call set_gdbarch_unwind_sp.
+
+2018-06-05  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* aarch64-tdep.c (aarch64_dummy_id): Delete.
 	(aarch64_gdbarch_init): Don't call set_gdbarch_dummy_id.
 	* alpha-tdep.c (alpha_dummy_id): Delete.

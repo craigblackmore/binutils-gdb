@@ -430,6 +430,7 @@ gdbarch_alloc (const struct gdbarch_info *info,
   gdbarch->memory_remove_breakpoint = default_memory_remove_breakpoint;
   gdbarch->remote_register_number = default_remote_register_number;
   gdbarch->unwind_pc = default_unwind_pc;
+  gdbarch->unwind_sp = default_unwind_sp;
   gdbarch->stabs_argument_has_addr = default_stabs_argument_has_addr;
   gdbarch->convert_from_func_ptr_addr = convert_from_func_ptr_addr_identity;
   gdbarch->addr_bits_remove = core_addr_identity;
@@ -613,7 +614,7 @@ verify_gdbarch (struct gdbarch *gdbarch)
   /* Skip verify of fetch_tls_load_module_address, has predicate.  */
   /* Skip verify of frame_args_skip, invalid_p == 0 */
   /* Skip verify of unwind_pc, invalid_p == 0 */
-  /* Skip verify of unwind_sp, has predicate.  */
+  /* Skip verify of unwind_sp, invalid_p == 0 */
   /* Skip verify of frame_num_args, has predicate.  */
   /* Skip verify of frame_align, has predicate.  */
   /* Skip verify of stabs_argument_has_addr, invalid_p == 0 */
@@ -1439,9 +1440,6 @@ gdbarch_dump (struct gdbarch *gdbarch, struct ui_file *file)
   fprintf_unfiltered (file,
                       "gdbarch_dump: unwind_pc = <%s>\n",
                       host_address_to_string (gdbarch->unwind_pc));
-  fprintf_unfiltered (file,
-                      "gdbarch_dump: gdbarch_unwind_sp_p() = %d\n",
-                      gdbarch_unwind_sp_p (gdbarch));
   fprintf_unfiltered (file,
                       "gdbarch_dump: unwind_sp = <%s>\n",
                       host_address_to_string (gdbarch->unwind_sp));
@@ -3047,13 +3045,6 @@ set_gdbarch_unwind_pc (struct gdbarch *gdbarch,
                        gdbarch_unwind_pc_ftype unwind_pc)
 {
   gdbarch->unwind_pc = unwind_pc;
-}
-
-int
-gdbarch_unwind_sp_p (struct gdbarch *gdbarch)
-{
-  gdb_assert (gdbarch != NULL);
-  return gdbarch->unwind_sp != NULL;
 }
 
 CORE_ADDR

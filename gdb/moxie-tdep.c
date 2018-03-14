@@ -447,14 +447,6 @@ moxie_software_single_step (struct regcache *regcache)
   return next_pcs;
 }
 
-/* Implement the "unwind_sp" gdbarch method.  */
-
-static CORE_ADDR
-moxie_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, MOXIE_SP_REGNUM);
-}
-
 /* Given a return value in `regbuf' with a type `valtype', 
    extract and copy its value into `valbuf'.  */
 
@@ -1072,8 +1064,6 @@ moxie_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_wchar_bit (gdbarch, 32);
   set_gdbarch_wchar_signed (gdbarch, 0);
-
-  set_gdbarch_unwind_sp (gdbarch, moxie_unwind_sp);
 
   set_gdbarch_num_regs (gdbarch, MOXIE_NUM_REGS);
   set_gdbarch_sp_regnum (gdbarch, MOXIE_SP_REGNUM);

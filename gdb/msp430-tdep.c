@@ -447,14 +447,6 @@ msp430_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
   return p.prologue_end;
 }
 
-/* Implement the "unwind_sp" gdbarch method.  */
-
-static CORE_ADDR
-msp430_unwind_sp (struct gdbarch *arch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, MSP430_SP_REGNUM);
-}
-
 /* Given a frame described by THIS_FRAME, decode the prologue of its
    associated function if there is not cache entry as specified by
    THIS_PROLOGUE_CACHE.  Save the decoded prologue in the cache and
@@ -975,7 +967,6 @@ msp430_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /* Frames, prologues, etc.  */
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
   set_gdbarch_skip_prologue (gdbarch, msp430_skip_prologue);
-  set_gdbarch_unwind_sp (gdbarch, msp430_unwind_sp);
   set_gdbarch_frame_align (gdbarch, msp430_frame_align);
   dwarf2_append_unwinders (gdbarch);
   frame_unwind_append_unwinder (gdbarch, &msp430_unwind);

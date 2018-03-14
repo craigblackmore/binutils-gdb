@@ -1976,13 +1976,6 @@ static const struct frame_unwind sh_frame_unwind = {
 };
 
 static CORE_ADDR
-sh_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame,
-					 gdbarch_sp_regnum (gdbarch));
-}
-
-static CORE_ADDR
 sh_frame_base_address (struct frame_info *this_frame, void **this_cache)
 {
   struct sh_frame_cache *cache = sh_frame_cache (this_frame, this_cache);
@@ -2290,7 +2283,6 @@ sh_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_believe_pcc_promotion (gdbarch, 1);
 
   set_gdbarch_frame_align (gdbarch, sh_frame_align);
-  set_gdbarch_unwind_sp (gdbarch, sh_unwind_sp);
   frame_base_set_default (gdbarch, &sh_frame_base);
 
   set_gdbarch_stack_frame_destroyed_p (gdbarch, sh_stack_frame_destroyed_p);

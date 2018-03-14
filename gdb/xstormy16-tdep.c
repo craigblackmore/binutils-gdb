@@ -751,12 +751,6 @@ static const struct frame_base xstormy16_frame_base = {
   xstormy16_frame_base_address
 };
 
-static CORE_ADDR
-xstormy16_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
-{
-  return frame_unwind_register_unsigned (next_frame, E_SP_REGNUM);
-}
-
 /* Function: xstormy16_gdbarch_init
    Initializer function for the xstormy16 gdbarch vector.
    Called by gdbarch.  Sets up the gdbarch vector(s) for this target.  */
@@ -810,7 +804,6 @@ xstormy16_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /*
    * Frame Info
    */
-  set_gdbarch_unwind_sp (gdbarch, xstormy16_unwind_sp);
   set_gdbarch_frame_align (gdbarch, xstormy16_frame_align);
   frame_base_set_default (gdbarch, &xstormy16_frame_base);
 

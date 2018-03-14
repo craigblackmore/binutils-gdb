@@ -213,6 +213,17 @@ default_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
   return addr;
 }
 
+/* Default unwind of the SP.  */
+
+CORE_ADDR
+default_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
+{
+  int sp_regnum;
+
+  sp_regnum = gdbarch_sp_regnum (gdbarch);
+  return frame_unwind_register_unsigned (next_frame, sp_regnum);
+}
+
 /* Helper functions for value-based register unwinding.  These return
    a (possibly lazy) value of the appropriate type.  */
 

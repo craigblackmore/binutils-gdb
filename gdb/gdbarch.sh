@@ -597,7 +597,7 @@ F;CORE_ADDR;fetch_tls_load_module_address;struct objfile *objfile;objfile
 #
 v;CORE_ADDR;frame_args_skip;;;0;;;0
 m;CORE_ADDR;unwind_pc;struct frame_info *next_frame;next_frame;;default_unwind_pc;;0
-M;CORE_ADDR;unwind_sp;struct frame_info *next_frame;next_frame
+m;CORE_ADDR;unwind_sp;struct frame_info *next_frame;next_frame;;default_unwind_sp;;0
 # DEPRECATED_FRAME_LOCALS_ADDRESS as been replaced by the per-frame
 # frame-base.  Enable frame-base before frame-unwind.
 F;int;frame_num_args;struct frame_info *frame;frame
