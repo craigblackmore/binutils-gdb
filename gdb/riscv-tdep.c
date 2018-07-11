@@ -335,7 +335,18 @@ riscv_has_feature (struct gdbarch *gdbarch, char feature)
 
   gdb_assert (feature >= 'A' && feature <= 'Z');
 
+  /* Try to read the misa register from the target.  This could fail for
+     some reason in which case HAVE_READ_MISA will be left as FALSE.
+     Alternatively a target may have a misa register, but its contents can
+     be 0.  */
   misa = riscv_read_misa_reg (&have_read_misa);
+
+  /* If we could not read the misa register from the target, or the value 0
+     was returned (which means the target doesn't implement misa) then we
+     use the features of the abi as the features of the machine.
+     Hopefully, if the user knows what they are doing then the abi features
+     should be a subset of the actual features, so for all current uses
+     this is probably fine.  */
   if (!have_read_misa || misa == 0)
     misa = gdbarch_tdep (gdbarch)->core_features;
 
