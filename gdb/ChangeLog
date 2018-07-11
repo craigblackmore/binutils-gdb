@@ -1,3 +1,9 @@
+2018-07-11  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* infrun.c (resume): Make static, add forward declaration.
+	(proceed): Update header comment.
+	* infrun.h (resume): Delete declaration.
+
 2018-07-10  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* exceptions.c (print_flush): Use target_terminal::ours instead of
