@@ -17,24 +17,46 @@
 
 standard_testfile
 
-if { [prepare_for_testing "failed to prepare" $testfile $srcfile \
-	  {debug optimize=-O1 additional_flags=-DNOCLONE}] } {
-    return -1
-}
+proc vla_optimized_out {compile_flags exe_suffix sizeof_result} {
+    global testfile srcfile
 
-proc vla_optimized_out { } {
+    if { [prepare_for_testing "failed to prepare" "$testfile.$exe_suffix" $srcfile \
+	      $compile_flags] } {
+	return -1
+    }
+
     if ![runto f1] {
 	fail "can't run to f1"
 	return
     }
 
     gdb_test "p a" \
-	{ = <optimized out>} \
+	" = <optimized out>" \
 	"printed optimized out vla"
 
     gdb_test "p sizeof (a)" \
-	{ = 6} \
+	" = $sizeof_result" \
 	"printed size of optimized out vla"
 }
 
-vla_optimized_out
+foreach test_settings [list \
+			   [list "o1" \
+				{debug optimize=-O1 \
+				     additional_flags=-DNOCLONE} \
+				"6"] \
+			   [list "o3" \
+				{debug optimize=-O3} \
+				"<optimized out>"]\
+			   [list "o3_strict" \
+				{debug optimize=-O3 \
+				     additional_flags=-gstrict-dwarf} \
+				"<optimized out>"]] {
+    set test_prefix [lindex $test_settings 0]
+    set compile_flags [lindex $test_settings 1]
+    set sizeof_result [lindex $test_settings 2]
+
+    with_test_prefix $test_prefix {
+	vla_optimized_out $compile_flags $test_prefix $sizeof_result
+    }
+}
+
