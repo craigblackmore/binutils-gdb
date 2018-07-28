@@ -54,6 +54,7 @@
 #include "opcode/riscv-opc.h"
 #include "cli/cli-decode.h"
 #include "observable.h"
+#include "prologue-value.h"
 
 /* The stack must be 16-byte aligned.  */
 #define SP_ALIGNMENT 16
@@ -1403,6 +1404,11 @@ riscv_scan_prologue (struct gdbarch *gdbarch,
     limit_pc = start_pc + 100;   /* MAGIC! */
   if (limit_pc < end_pc)
     end_pc = limit_pc;
+
+  pv_t regs[RISCV_NUM_INTEGER_REGS]; /* Number of GPR.  */
+  for (int regno = 0; regno < RISCV_NUM_INTEGER_REGS; regno++)
+    regs[regno] = pv_register (regno, 0);
+  pv_area stack (RISCV_SP_REGNUM, gdbarch_addr_bit (gdbarch));
 
   if (cache != NULL)
     cache->sp_offset = 0;

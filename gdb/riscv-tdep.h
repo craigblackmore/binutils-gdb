@@ -49,7 +49,9 @@ enum
 
   RISCV_PRIV_REGNUM = 4161,
 
-  RISCV_LAST_REGNUM = RISCV_PRIV_REGNUM
+  RISCV_LAST_REGNUM = RISCV_PRIV_REGNUM,
+
+  RISCV_NUM_INTEGER_REGS = 32
 };
 
 /* RISC-V specific per-architecture information.  */
