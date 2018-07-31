@@ -1324,10 +1324,18 @@ value_contents_copy_raw (struct value *dst, LONGEST dst_offset,
 
   /* The memory for SRC and DST should already be allocated by now.  Check
      that we're not about to access outside of allocated memory.  */
+  if (!((src_offset + length) * unit_size
+        <= TYPE_LENGTH (src->enclosing_type)))
+    warning ("src buffer overflow");
+  if (!((dst_offset + length) * unit_size
+        <= TYPE_LENGTH (dst->enclosing_type)))
+    warning ("dst buffer overflow");
+#if 0
   gdb_assert ((src_offset + length) * unit_size
               <= TYPE_LENGTH (src->enclosing_type));
   gdb_assert ((dst_offset + length) * unit_size
               <= TYPE_LENGTH (dst->enclosing_type));
+#endif
 
   /* Copy the data.  */
   memcpy (value_contents_all_raw (dst) + dst_offset * unit_size,
@@ -3586,6 +3594,32 @@ value_from_component (struct value *whole, struct type *type, LONGEST offset)
 
   return v;
 }
+
+
+struct value *
+value_from_component_2 (struct value *whole, struct type *type, LONGEST offset)
+{
+  struct value *v;
+
+  if (VALUE_LVAL (whole) == lval_memory && value_lazy (whole))
+    {
+      v = allocate_value_lazy (type);
+      v->offset = value_offset (whole) + offset + value_embedded_offset (whole);
+      set_value_component_location (v, whole);
+    }
+  else
+    {
+      v = value_copy (whole);
+      deprecated_set_value_type (v, type);
+      set_value_embedded_offset (v, value_embedded_offset (v) + offset);
+
+      v->offset = value_offset (whole) + offset;
+    }
+
+  return v;
+}
+
+
 
 struct value *
 coerce_ref_if_computed (const struct value *arg)

@@ -110,6 +110,39 @@ class Fake
   {
   }
 };
+
+class andrew_vA {
+ public:
+  int va;
+  int vx;
+};
+
+andrew_vA g_vA;
+
+class andrew_vB : public virtual andrew_vA {
+ public:
+  int vb;
+  int vx;
+};
+
+andrew_vB g_vB;
+
+class andrew_vC : public virtual andrew_vA {
+ public:
+  int vc;
+  int vx;
+};
+
+andrew_vC g_vC;
+
+class andrew_vD : public virtual andrew_vB, public virtual andrew_vC {
+ public:
+  int vd;
+  int vx;
+};
+
+andrew_vD g_vD;
+
 #endif
 
 struct to_string_returns_value_inner
@@ -350,6 +383,15 @@ main ()
   Derived derived;
   
   Fake fake (42);
+
+  g_vD.andrew_vA::va = 19;
+  g_vD.andrew_vA::vx = 20;
+  g_vD.andrew_vB::vb = 21;
+  g_vD.andrew_vB::vx = 22;
+  g_vD.andrew_vC::vc = 23;
+  g_vD.andrew_vC::vx = 24;
+  g_vD.andrew_vD::vd = 25;
+  g_vD.andrew_vD::vx = 26;
 #endif
 
   add_item (&c, 23);		/* MI breakpoint here */

@@ -672,6 +672,8 @@ extern struct value *value_from_pointer (struct type *type, CORE_ADDR addr);
 extern struct value *value_from_history_ref (const char *, const char **);
 extern struct value *value_from_component (struct value *, struct type *,
 					   LONGEST);
+extern struct value *value_from_component_2 (struct value *, struct type *,
+                                             LONGEST);
 
 extern struct value *value_at (struct type *type, CORE_ADDR addr);
 extern struct value *value_at_lazy (struct type *type, CORE_ADDR addr);

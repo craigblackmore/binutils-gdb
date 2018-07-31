@@ -676,7 +676,10 @@ gdbpy_apply_val_pretty_printer (const struct extension_language_defn *extlang,
   gdbpy_enter enter_py (gdbarch, language);
 
   /* Instantiate the printer.  */
-  value = value_from_component (val, type, embedded_offset);
+  if (getenv ("APB_NEW") != NULL)
+    value = value_from_component_2 (val, type, embedded_offset);
+  else
+    value = value_from_component (val, type, embedded_offset);
 
   gdbpy_ref<> val_obj (value_to_value_object (value));
   if (val_obj == NULL)

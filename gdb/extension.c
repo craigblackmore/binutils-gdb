@@ -497,8 +497,11 @@ apply_ext_lang_val_pretty_printer (struct type *type,
   const struct extension_language_defn *extlang;
 
   /* In some cases pretty-printers can't be used.  */
-  if (options->raw || has_virtual_baseclass (type))
+  if (options->raw /*|| has_virtual_baseclass (type)*/)
     return 0;
+
+  if (getenv ("APB_NO_ADJUST") == NULL)
+    embedded_offset -= value_embedded_offset (val);
 
   ALL_ENABLED_EXTENSION_LANGUAGES (i, extlang)
     {

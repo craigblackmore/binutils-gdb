@@ -142,6 +142,15 @@ class pp_vbase1 (object):
     def to_string (self):
         return "pp class name: " + self.val.type.tag
 
+class pp_andrew (object):
+    def __init__ (self, val):
+        self.val = val
+
+    def to_string (self):
+        a_va = self.val['va']
+        a_vx = self.val['vx']
+        return "pp Andrew's class, name: " + self.val.type.tag + ", va: " + str (a_va) + ", vA::vx: " + str (a_vx)
+
 class pp_nullstr (object):
     def __init__(self, val):
         self.val = val
@@ -321,6 +330,9 @@ def register_pretty_printers ():
     
     pretty_printers_dict[re.compile ('^VirtualTest$')] =  pp_multiple_virtual
     pretty_printers_dict[re.compile ('^Vbase1$')] =  pp_vbase1
+
+    pretty_printers_dict[re.compile ('^andrew_vB$')] = pp_andrew
+    pretty_printers_dict[re.compile ('^andrew_vC$')] = pp_andrew
 
     pretty_printers_dict[re.compile ('^struct nullstr$')] = pp_nullstr
     pretty_printers_dict[re.compile ('^nullstr$')] = pp_nullstr
