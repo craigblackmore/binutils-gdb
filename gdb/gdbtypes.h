@@ -1973,6 +1973,10 @@ extern int is_public_ancestor (struct type *, struct type *);
 
 extern int is_unique_ancestor (struct type *, struct value *);
 
+/* Return true if any baseclass of TYPE is a virtual baseclass.  */
+
+extern bool has_virtual_baseclass (struct type *type);
+
 /* Overload resolution */
 
 #define LENGTH_MATCH(bv) ((bv)->rank[0])
