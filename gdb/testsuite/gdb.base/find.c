@@ -31,7 +31,7 @@
 #undef int32_t
 #undef int64_t
 
-#define CHUNK_SIZE 16000 /* same as findcmd.c's */
+#define CHUNK_SIZE 3000 /* same as findcmd.c's */
 #define BUF_SIZE (2 * CHUNK_SIZE) /* at least two chunks */
 
 static int8_t int8_search_buf[100];

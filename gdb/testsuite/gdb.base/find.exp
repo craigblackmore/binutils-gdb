@@ -150,7 +150,7 @@ gdb_test "find &search_buf\[0\], +100, (int8_t) 0x62, (int16_t) 0x6363, (int32_t
 # targets, test the search spanning multiple chunks.
 # Remote targets may implement the search differently.
 
-set CHUNK_SIZE 16000 ;# see findcmd.c
+set CHUNK_SIZE 3000 ;# see findcmd.c
 
 gdb_test_no_output "set *(int32_t*) &search_buf\[0*${CHUNK_SIZE}+100\] = 0x12345678" ""
 gdb_test_no_output "set *(int32_t*) &search_buf\[1*${CHUNK_SIZE}+100\] = 0x12345678" ""
