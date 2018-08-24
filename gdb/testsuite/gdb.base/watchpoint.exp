@@ -103,7 +103,7 @@ proc test_simple_watchpoint {} {
     # Run until we get to the first marker function.
 
     gdb_run_cmd
-    set timeout 600
+    set timeout 10
     set test "run to marker1 in test_simple_watchpoint"
     set retcode [gdb_test_multiple "" $test {
 	-re "Breakpoint 1, marker1 .*$gdb_prompt $" {
@@ -217,7 +217,7 @@ proc test_disabling_watchpoints {} {
     # Run until we get to the first marker function.
 
     gdb_run_cmd
-    set timeout 600
+    set timeout 10
     set test "run to marker1 in test_disabling_watchpoints"
     set retcode [gdb_test_multiple "" $test {
 	-re "Breakpoint 1, marker1 .*$gdb_prompt $" {
@@ -910,7 +910,7 @@ proc test_watch_register_location {} {
 # Start with a fresh gdb.
 
 set prev_timeout $timeout
-set timeout 600	
+set timeout 10	
 verbose "Timeout now 600 sec.\n"
 
 test_no_hw_watchpoints
