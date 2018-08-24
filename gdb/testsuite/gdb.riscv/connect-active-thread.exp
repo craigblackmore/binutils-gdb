@@ -1,0 +1,30 @@
+# Copyright 2003-2018 Free Software Foundation, Inc.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+# This test checks that GDB remains on the same thread when disconnecting
+# and reconnecting to the target. The final testcase will fail if the qC
+# packet is not handled correctly.
+#
+
+gdb_exit
+gdb_start
+
+gdb_reload_start_target
+gdb_test "info threads" "\\* 1.*Thread 1.*" "Start on thread 1"
+gdb_test "thread 2" "Switching to thread 2.*" "Switch to thread 2"
+gdb_test "info threads" "\\* 2.*Thread 2.*" "info threads: current thread is 2"
+gdb_test "disconnect" "Ending remote debugging."
+gdb_reload_start_target
+gdb_test "info threads" "\\* 2.*Thread 2.*" "Current thread is 2 after reconnecting to remote target"
