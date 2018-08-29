@@ -1,0 +1,86 @@
+# Copyright 2003-2018 Free Software Foundation, Inc.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+# check that breakpoints alternating between thread 1 and 2 are hit
+# and reported for the correct thread
+
+# TODO mark as -riscv rtos specific
+# TODO generalise to N threads
+# TODO stop the test early if something goes out of sync and fails
+standard_testfile
+
+if {[prepare_for_testing "failed to prepare" $testfile $srcfile "debug additional_flags=-DENABLE_SMP"]} {
+    return -1
+}
+
+if ![runto_main] then {
+    fail "can't run to main"
+    return 0
+}
+
+# get the target onto thread 2
+gdb_test "break 30 thread 2" ""
+gdb_test "continue" "Thread 2 hit.*" "Continue to breakpoint on thread 2"
+
+delete_breakpoints
+
+gdb_test "break 30" ""
+
+# the breakpoint should hit on alternating threads
+# each thread should be hit 5 times
+for {set i 0} {$i < 5} {incr i} {
+	gdb_test "continue" "Thread 1 hit.*" "Thread 1 hit $i times"
+	# gdb_test "info threads"
+	gdb_test "continue" "Thread 2 hit.*" "Thread 2 hit $i times"
+	# gdb_test "info threads"
+}
+
+# check that first thread hits all breakpoints, then second thread
+# hits them. Try this 5 times.
+delete_breakpoints
+gdb_test "break 26" ""
+gdb_test "break 27" ""
+gdb_test "break 28" ""
+gdb_test "break 29" ""
+
+for {set i 0} {$i < 5} {incr i} {
+	gdb_test "continue" "Thread 1 hit.*26.*" "Thread 1 hit (26) $i times"
+	gdb_test "continue" "Thread 1 hit.*27.*" "Thread 1 hit (27) $i times"
+	gdb_test "continue" "Thread 1 hit.*28.*" "Thread 1 hit (28) $i times"
+	gdb_test "continue" "Thread 1 hit.*29.*" "Thread 1 hit (29) $i times"
+	# gdb_test "info threads"
+	gdb_test "continue" "Thread 2 hit.*26.*" "Thread 2 hit (26) $i times"
+	gdb_test "continue" "Thread 2 hit.*27.*" "Thread 2 hit (27) $i times"
+	gdb_test "continue" "Thread 2 hit.*28.*" "Thread 2 hit (28) $i times"
+	gdb_test "continue" "Thread 2 hit.*29.*" "Thread 2 hit (29) $i times"
+	# gdb_test "info threads"
+}
+
+# test thread-specific breakpoints - thread 1 should hit 26 and 28,
+# then thread 2 should hit 27 and 29. Try this 5 times.
+delete_breakpoints
+gdb_test "break 26 thread 2" ""
+gdb_test "break 27 thread 1" ""
+gdb_test "break 28 thread 2" ""
+gdb_test "break 29 thread 1" ""
+
+for {set i 0} {$i < 5} {incr i} {
+	gdb_test "continue" "Thread 1 hit.*27.*" "Thread 1 hit (t27) $i times"
+	gdb_test "continue" "Thread 1 hit.*29.*" "Thread 1 hit (t29) $i times"
+	# gdb_test "info threads"
+	gdb_test "continue" "Thread 2 hit.*26.*" "Thread 2 hit (t26) $i times"
+	gdb_test "continue" "Thread 2 hit.*28.*" "Thread 2 hit (t28) $i times"
+	# gdb_test "info threads"
+}
