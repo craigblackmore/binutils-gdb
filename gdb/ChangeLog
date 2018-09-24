@@ -1,3 +1,13 @@
+
+2018-09-24  Craig Blackmore  <craig.blackmore@embecosm.com>
+
+	* riscv-tdep.c (set_have_nonsteppable_watchpoint): Add callback
+	for 'set riscv have_nonsteppable_watchpoint'.
+	(show_have_nonsteppable_watchpoint): Add callback for
+	'show riscv have_nonsteppable_watchpoint'.
+	(riscv_gdbarch_init): Initialise gdbarch setting for
+	have_nonesteppable_watchpoint.
+
 2018-09-24  Tom Tromey  <tom@tromey.com>
 
 	* common/pathstuff.c (get_standard_cache_dir): Make
