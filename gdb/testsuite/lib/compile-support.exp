@@ -26,6 +26,9 @@ proc skip_compile_feature_tests {} {
 	"Could not load libcc1.*\r\n$gdb_prompt $" {
 	    set result 1
 	}
+	-re "could not find symbol gcc_cp_fe_context in library libcc1.so.*\r\n$gdb_prompt $" {
+	    set result 1
+	}
 	-re "Command not supported on this host\\..*\r\n$gdb_prompt $" {
 	    set result 1
 	}
